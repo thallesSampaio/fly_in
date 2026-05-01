@@ -1,5 +1,5 @@
-from src.Connection import Connection
-from typing import List, Set, Optional
+# from src.Connection import Connection
+from typing import Set, Optional
 from enum import Enum
 
 
@@ -30,7 +30,7 @@ class Zone:
         self.zone_type = zone_type
         self.max_drones = max_drones
         self.color = color
-        self.neighbours: List[Connection] = []
+        # self.neighbours: List[Connection] = []
         self.is_start = is_start
         self.is_end = is_end
         self.current_drones: Set[int] = set()

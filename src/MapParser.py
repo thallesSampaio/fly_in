@@ -1,3 +1,6 @@
+from src.Zone import Zone
+
+
 class MapParser:
 
     valid_keys: list[str] = [
@@ -13,6 +16,7 @@ class MapParser:
     def load_data(cls, filename: str) -> dict[str, dict | str]:
         """Load data from the map files"""
 
+        list_hubs: list[Zone] = []
         raw_data: dict[str, dict | str] = {}
         hubs: dict[str, str] = {}
         connections: dict[str, str] = {}
@@ -42,6 +46,8 @@ class MapParser:
                                      f"at line {i}.")
 
                 if key == "hub":
+                    item: Zone = cls.__parse_hub(i, value)
+                    list_hubs.append(item)
                     split = value.split(" ", 1)
                     name = split[0]
                     value = split[1]
@@ -64,5 +70,29 @@ class MapParser:
             for key in cls.loaded_keys:
                 if key not in raw_data.keys():
                     raise ValueError(f"Missing key: '{key}'.")
-
+        for item in list_hubs:
+            print(item.name, item.x, item.y)
         return raw_data
+
+    @classmethod
+    def __parse_hub(cls, line_number: int, value: str) -> Zone:
+        parts = value.split()
+        if len(parts) < 3:
+            raise ValueError(f"Line {line_number}:"
+                             " Hub format must be 'name x y [metadata]'")
+
+        name = parts[0]
+        if "-" in name:
+            raise ValueError(f"Line {line_number}:"
+                             " Zone names cannot contain dashes ('-')")
+
+        try:
+            x = int(parts[1])
+            y = int(parts[2])
+        except ValueError:
+            raise ValueError(f"Line {line_number}:"
+                             " Coordinates must be integers")
+
+        # metadata_str = " ".join(parts[3:]) if len(parts) > 3 else ""
+
+        return Zone(name=name, x=x, y=y)
