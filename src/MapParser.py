@@ -1,4 +1,5 @@
-from src.Zone import Zone
+from src.models import Zone, Connection, ZoneType
+from typing import List
 
 
 class MapParser:
@@ -13,13 +14,12 @@ class MapParser:
     ]
 
     @classmethod
-    def load_data(cls, filename: str) -> dict[str, dict | str]:
+    def load_data(cls, filename: str) -> tuple[List[Zone], List[Connection]]:
         """Load data from the map files"""
 
         list_hubs: list[Zone] = []
-        raw_data: dict[str, dict | str] = {}
-        hubs: dict[str, str] = {}
-        connections: dict[str, str] = {}
+        list_connections: list[Connection] = []
+        dup_helper: dict[str, str] = {}
 
         with open(filename, "r") as file:
             for i, line in enumerate(file, 1):
@@ -27,18 +27,10 @@ class MapParser:
                 if not line or line.startswith("#"):
                     continue
 
-                if ":" not in line:
-                    raise ValueError(f"Invalid format at line {i}:"
-                                     " missing ':'.")
+                key, value = cls.__parse_key_value(i, line)
 
-                parts = line.split(":", 1)
-                key = parts[0].strip()
-                value = parts[1].strip()
-
-                if key not in cls.valid_keys:
-                    raise ValueError(f"Invalid key at line {i}: '{key}'.")
                 if key != "hub" and key != "connection":
-                    if key in raw_data:
+                    if key in dup_helper:
                         raise ValueError(f"Duplicate key found at line {i}: "
                                          f"'{key}'.")
                 if not value:
@@ -48,31 +40,21 @@ class MapParser:
                 if key == "hub":
                     item: Zone = cls.__parse_hub(i, value)
                     list_hubs.append(item)
-                    split = value.split(" ", 1)
-                    name = split[0]
-                    value = split[1]
-                    hubs[name] = value
                 elif key == "connection":
-                    split = value.split(" ", 1)
-                    name = split[0]
-                    if len(split) > 1:
-                        value = split[1].split("=", 1)[1]
-                        value = value.removesuffix("]")
-                        connections[name] = value
-                    else:
-                        connections[name] = "1"
-                else:
-                    raw_data[key] = value
+                    item: Connection = cls.__parse_connection(i, value)
+                    list_connections.append(item)
+                elif key == "start_hub":
+                    item: Zone = cls.__parse_hub(i, value)
+                    item.is_start = True
+                    list_hubs.append(item)
+                    dup_helper[key] = item
+                elif key == "end_hub":
+                    item: Zone = cls.__parse_hub(i, value)
+                    item.is_end = True
+                    list_hubs.append(item)
+                    dup_helper[key] = item
 
-            raw_data["hubs"] = hubs
-            raw_data["connections"] = connections
-
-            for key in cls.loaded_keys:
-                if key not in raw_data.keys():
-                    raise ValueError(f"Missing key: '{key}'.")
-        for item in list_hubs:
-            print(item.name, item.x, item.y)
-        return raw_data
+        return list_hubs, list_connections
 
     @classmethod
     def __parse_hub(cls, line_number: int, value: str) -> Zone:
@@ -91,8 +73,118 @@ class MapParser:
             y = int(parts[2])
         except ValueError:
             raise ValueError(f"Line {line_number}:"
-                             " Coordinates must be integers")
+                             " Zone coordinates must be integers, got"
+                             f" '{parts[1]}' and '{parts[2]}'.")
 
-        # metadata_str = " ".join(parts[3:]) if len(parts) > 3 else ""
+        metadata_str = " ".join(parts[3:]) if len(parts) > 3 else ""
+        metadata = cls.__parse_metadata(line_number, metadata_str)
+        type_str = metadata.get("zone", "normal").lower()
+        try:
+            zone_type = ZoneType(type_str)
+        except ValueError:
+            raise ValueError(f"Line {line_number}: "
+                             f"Invalid zone type '{type_str}'. ")
+        color = metadata.get("color")
+        try:
+            max_drones = int(metadata.get("max_drones", "1"))
+        except ValueError:
+            raise ValueError(f"Line {line_number}:"
+                             "max_drones must be an integer.")
 
-        return Zone(name=name, x=x, y=y)
+        return Zone(name=name, x=x, y=y, zone_type=zone_type, color=color,
+                    max_drones=max_drones)
+
+    @classmethod
+    def __parse_connection(cls, line_number: int, value: str) -> Connection:
+        parts = value.split()
+        if len(parts) < 1:
+            raise ValueError(f"Line {line_number}: Empty connection.")
+
+        connection_name = parts[0]
+
+        if "-" not in connection_name:
+            raise ValueError(f"Line {line_number}: "
+                             "Connection must be in format 'zoneA-zoneB'.")
+
+        zone_names = connection_name.split("-")
+
+        if len(zone_names) != 2:
+            raise ValueError(f"Line {line_number}: "
+                             "Connection must contain exactly two zones.")
+
+        zone_a = zone_names[0]
+        zone_b = zone_names[1]
+
+        if not zone_a or not zone_b:
+            raise ValueError(f"Line {line_number}: "
+                             "Connection zones cannot be empty.")
+
+        metadata_str = " ".join(parts[1:]) if len(parts) > 1 else ""
+        metadata = cls.__parse_metadata(line_number, metadata_str)
+
+        for key in metadata:
+            if key != "max_link_capacity":
+                raise ValueError(f"Line {line_number}: "
+                                 f"Invalid connection metadata '{key}'.")
+
+        try:
+            capacity = metadata.get("max_link_capacity", "1")
+            max_capacity = int(capacity)
+        except ValueError:
+            raise ValueError(f"Line {line_number}: "
+                             "Invalid capacity value "
+                             f"'{capacity}' must be an integer.")
+
+        return Connection(zone_a=zone_a, zone_b=zone_b,
+                          max_capacity=max_capacity)
+
+    @classmethod
+    def __parse_metadata(cls, line_number: int,
+                         metadata: str) -> dict[str, str]:
+        if not metadata:
+            return {}
+
+        if not metadata.startswith("[") or not metadata.endswith("]"):
+            raise ValueError(f"Line {line_number}: Invalid metadata format.")
+
+        content = metadata[1:-1].strip()
+        parsed: dict[str, str] = {}
+
+        if not content:
+            return parsed
+
+        for item in content.split():
+            if "=" not in item:
+                raise ValueError(
+                    f"Line {line_number}: Invalid metadata item '{item}'.")
+
+            key, value = item.split("=", 1)
+
+            if not key or not value:
+                raise ValueError(
+                    f"Line {line_number}: Invalid metadata item '{item}'.")
+
+            if key in parsed:
+                raise ValueError(
+                    f"Line {line_number}: Duplicate metadata key '{key}'.")
+
+            parsed[key] = value
+
+        return parsed
+
+    @classmethod
+    def __parse_key_value(cls, line_number: int, line: str) -> tuple[str, str]:
+        if ":" not in line:
+            raise ValueError(f"Line {line_number}: Missing ':'.")
+
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+
+        if key not in cls.valid_keys:
+            raise ValueError(f"Line {line_number}: Invalid key '{key}'.")
+
+        if not value:
+            raise ValueError(f"Line {line_number}: Empty value for '{key}'.")
+
+        return key, value
