@@ -1,4 +1,4 @@
-from src.models import Zone, Connection, ZoneType
+from src.models import Zone, Connection, ZoneType, Drone, Graph
 from typing import List
 
 
@@ -8,18 +8,18 @@ class MapParser:
         "nb_drones", "start_hub", "end_hub",
         "hub", "connection"
     ]
-    loaded_keys: list[str] = [
-        "nb_drones", "start_hub", "end_hub",
-        "hubs", "connections"
-    ]
+    zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
 
     @classmethod
-    def load_data(cls, filename: str) -> tuple[List[Zone], List[Connection]]:
+    def load_data(cls, filename: str) -> tuple[List[Zone],
+                                         List[Connection],
+                                         List[Drone]]:
         """Load data from the map files"""
-
+        graph = Graph()
+        list_drones: list[Drone] = []
         list_hubs: list[Zone] = []
         list_connections: list[Connection] = []
-        dup_helper: dict[str, str] = {}
+        dup_helper: set[str] = set()
 
         with open(filename, "r") as file:
             for i, line in enumerate(file, 1):
@@ -37,24 +37,35 @@ class MapParser:
                     raise ValueError(f"Empty value for key '{key}' "
                                      f"at line {i}.")
 
-                if key == "hub":
-                    item: Zone = cls.__parse_hub(i, value)
-                    list_hubs.append(item)
+                if key in cls.zones_keys:
+                    zone = cls.__parse_hub(i, value)
+                    if key == "start_hub":
+                        zone.is_start = True
+                    elif key == "end_hub":
+                        zone.is_end = True
+                    graph.add_zone(zone)
+                    dup_helper.add(key)
                 elif key == "connection":
-                    item: Connection = cls.__parse_connection(i, value)
-                    list_connections.append(item)
-                elif key == "start_hub":
-                    item: Zone = cls.__parse_hub(i, value)
-                    item.is_start = True
-                    list_hubs.append(item)
-                    dup_helper[key] = item
-                elif key == "end_hub":
-                    item: Zone = cls.__parse_hub(i, value)
-                    item.is_end = True
-                    list_hubs.append(item)
-                    dup_helper[key] = item
+                    graph.add_connection(cls.__parse_connection(i, value))
+                elif key == "nb_drones":
+                    list_drones = cls.__parse_nb_drones(i, value)
+                    dup_helper.add(key)
 
-        return list_hubs, list_connections
+        return list_hubs, list_connections, list_drones
+
+    
+    @classmethod
+    def __parse_nb_drones(cls, line_number: int, value: str) -> list[Drone]:
+        try:
+            nb_drones = int(value)
+        except ValueError:
+            raise ValueError(f"Line {line_number}: nb_drones must be an integer.")
+
+        if nb_drones < 1:
+            raise ValueError(f"Line {line_number}: nb_drones must be positive"
+                              " and higher than 0.")
+
+        return [Drone(i) for i in range(1, nb_drones + 1)]
 
     @classmethod
     def __parse_hub(cls, line_number: int, value: str) -> Zone:
