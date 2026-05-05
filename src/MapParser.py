@@ -11,9 +11,7 @@ class MapParser:
     zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
 
     @classmethod
-    def load_data(cls, filename: str) -> tuple[List[Zone],
-                                         List[Connection],
-                                         List[Drone]]:
+    def load_data(cls, filename: str) -> tuple[Graph, List[Drone]]:
         """Load data from the map files"""
         graph = Graph()
         list_drones: list[Drone] = []
@@ -46,12 +44,13 @@ class MapParser:
                     graph.add_zone(zone)
                     dup_helper.add(key)
                 elif key == "connection":
-                    graph.add_connection(cls.__parse_connection(i, value))
+                    conn: Connection = cls.__parse_connection(i, value)
+                    graph.add_connection(conn.zone_a, conn.zone_b, conn.max_capacity)
                 elif key == "nb_drones":
                     list_drones = cls.__parse_nb_drones(i, value)
                     dup_helper.add(key)
 
-        return list_hubs, list_connections, list_drones
+        return (graph, list_drones)
 
     
     @classmethod
