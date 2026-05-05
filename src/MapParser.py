@@ -15,9 +15,8 @@ class MapParser:
         """Load data from the map files"""
         graph = Graph()
         list_drones: list[Drone] = []
-        list_hubs: list[Zone] = []
-        list_connections: list[Connection] = []
         dup_helper: set[str] = set()
+        first_valid_line = True
 
         with open(filename, "r") as file:
             for i, line in enumerate(file, 1):
@@ -26,6 +25,12 @@ class MapParser:
                     continue
 
                 key, value = cls.__parse_key_value(i, line)
+
+                if first_valid_line:
+                    if key != "nb_drones":
+                        raise ValueError(f"Line {i}: First line must define"
+                                        " nb_drones.")
+                    first_valid_line = False
 
                 if key != "hub" and key != "connection":
                     if key in dup_helper:
@@ -50,6 +55,12 @@ class MapParser:
                     list_drones = cls.__parse_nb_drones(i, value)
                     dup_helper.add(key)
 
+        required = {"nb_drones", "start_hub", "end_hub"}
+        missing = required - dup_helper
+
+        if missing:
+            raise ValueError(f"Missing required keys: {', '.join(missing)}.")
+
         return (graph, list_drones)
 
     
@@ -68,6 +79,7 @@ class MapParser:
 
     @classmethod
     def __parse_hub(cls, line_number: int, value: str) -> Zone:
+        valid_metadata = {"zone", "color", "max_drones"}
         parts = value.split()
         if len(parts) < 3:
             raise ValueError(f"Line {line_number}:"
@@ -88,6 +100,10 @@ class MapParser:
 
         metadata_str = " ".join(parts[3:]) if len(parts) > 3 else ""
         metadata = cls.__parse_metadata(line_number, metadata_str)
+        for key in metadata:
+            if key not in valid_metadata:
+                raise ValueError(f"Line {line_number}: Invalid hub metadata"
+                                 f" '{key}'.")
         type_str = metadata.get("zone", "normal").lower()
         try:
             zone_type = ZoneType(type_str)
@@ -99,7 +115,10 @@ class MapParser:
             max_drones = int(metadata.get("max_drones", "1"))
         except ValueError:
             raise ValueError(f"Line {line_number}:"
-                             "max_drones must be an integer.")
+                             " max_drones must be an integer.")
+        if max_drones < 1:
+                raise ValueError(f"Line {line_number}: max_drones"
+                                 " must be higher than 0.")
 
         return Zone(name=name, x=x, y=y, zone_type=zone_type, color=color,
                     max_drones=max_drones)
@@ -145,6 +164,10 @@ class MapParser:
                              "Invalid capacity value "
                              f"'{capacity}' must be an integer.")
 
+        if max_capacity < 1:
+                raise ValueError(f"Line {line_number}: max_capacity"
+                                 " must be higher than 0.")
+        
         return Connection(zone_a=zone_a, zone_b=zone_b,
                           max_capacity=max_capacity)
 

@@ -74,8 +74,12 @@ class Graph:
         self.connections: List[Connection] = []
         self.start_zone: Optional[Zone] = None
         self.end_zone: Optional[Zone] = None
+        self.connection_keys: set[frozenset[str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
+        if zone.name in self.zones:
+            raise ValueError(f"Duplicate zone '{zone.name}'")
+
         self.zones[zone.name] = zone
         if zone.is_start:
             self.start_zone = zone
@@ -85,6 +89,20 @@ class Graph:
     def add_connection(self, zone_a_name: str,
                        zone_b_name: str,
                        max_capacity: int = 1) -> None:
+        if zone_a_name not in self.zones:
+            raise ValueError(f"Unknown zone '{zone_a_name}'")
+
+        if zone_b_name not in self.zones:
+            raise ValueError(f"Unknown zone '{zone_b_name}'")
+
+        key = frozenset([zone_a_name, zone_b_name])
+
+        if key in self.connection_keys:
+            raise ValueError("Duplicate connection"
+                             f"'{zone_a_name}-{zone_b_name}'")
+
+        self.connection_keys.add(key)
+        
         zone_a = self.zones[zone_a_name]
         zone_b = self.zones[zone_b_name]
         conn = Connection(zone_a, zone_b, max_capacity)
@@ -94,3 +112,25 @@ class Graph:
 
     def get_zone(self, name: str) -> Optional[Zone]:
         return self.zones.get(name)
+
+    def debug_print(self) -> None:
+        print("=== GRAPH ===\n")
+
+        print("Zones:")
+        for zone in self.zones.values():
+            flags = []
+            if zone.is_start:
+                flags.append("START")
+            if zone.is_end:
+                flags.append("END")
+
+            flag_str = f" ({', '.join(flags)})" if flags else ""
+            print(f"- {zone.name}{flag_str} "
+                  f"[type={zone.zone_type.value}, cap={zone.max_drones}]")
+
+        print("\nConnections:")
+        for conn in self.connections:
+            print(f"- {conn.zone_a.name} <-> {conn.zone_b.name} "
+                  f"(cap={conn.max_capacity})")
+
+        print("\n================\n")
