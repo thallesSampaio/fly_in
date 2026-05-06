@@ -74,7 +74,7 @@ class Graph:
         self.connections: List[Connection] = []
         self.start_zone: Optional[Zone] = None
         self.end_zone: Optional[Zone] = None
-        self.connection_keys: set[frozenset[str]] = set()
+        self.connection_keys: set[tuple[str, str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
         if zone.name in self.zones:
@@ -95,7 +95,7 @@ class Graph:
         if zone_b_name not in self.zones:
             raise ValueError(f"Unknown zone '{zone_b_name}'")
 
-        key = frozenset([zone_a_name, zone_b_name])
+        key = tuple(sorted((zone_a_name, zone_b_name)))
 
         if key in self.connection_keys:
             raise ValueError("Duplicate connection"
