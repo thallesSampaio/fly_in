@@ -1,5 +1,6 @@
 from src.MapParser import MapParser
 from src.pathfinder import Pathfinder
+from src.simulator import Simulator
 import sys
 
 
@@ -17,5 +18,8 @@ if __name__ == "__main__":
                 print(item.drone_id)
             path = pathfinder.bfs()
             print(" -> ".join(zone.name for zone in path))
+            sim = Simulator(graph, drones)
+            sim.run()
+            sim.display_results()
         except Exception as e:
             print(e)

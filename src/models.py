@@ -76,12 +76,30 @@ class Drone:
     def __init__(self, drone_id: int) -> None:
         self.drone_id = drone_id
         self.current_zone: Optional[Zone] = None
-        # self.path: List[Zone] = []
-        # self.path_index: int = 0
-        # self.delivered: bool = False
-        # self.in_transit: bool = False
-        # self.transit_dest: Optional[Zone] = None
+        self.path: List[Zone] = []
+        self.path_index: int = 0
+        self.delivered: bool = False
+        self.in_transit: bool = False
+        self.transit_dest: Optional[Zone] = None
         # self.transit_turns_left: int = 0
+
+    def get_next_zone(self) -> Optional[Zone]:
+        if self.path_index + 1 < len(self.path):
+            return self.path[self.path_index + 1]
+        return None
+
+    def move_to_next(self) -> None:
+        next_zone = self.get_next_zone()
+
+        if next_zone is None:
+            return
+
+        if self.current_zone is not None:
+            self.current_zone.remove_drone(self.drone_id)
+
+        self.current_zone = next_zone
+        self.current_zone.add_drone(self.drone_id)
+        self.path_index += 1
 
 
 class Graph:
