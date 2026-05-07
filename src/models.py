@@ -1,4 +1,4 @@
-from typing import Set, Optional, List
+from typing import Set, Optional, List, Dict
 from enum import Enum
 
 
@@ -33,7 +33,7 @@ class Zone:
         self.is_start = is_start
         self.is_end = is_end
         self.current_drones: Set[int] = set()
-    
+
     def has_capacity(self) -> bool:
         if self.is_start or self.is_end:
             return True
@@ -54,12 +54,22 @@ class Connection:
         self.zone_b = zone_b
         self.max_capacity = max_capacity
         self.current_traversing: int = 0
-    
+
     def get_other(self, zone: Zone) -> Zone:
         if zone == self.zone_a:
             return self.zone_b
-        return self.zone_a
+        elif zone == self.zone_b:
+            return self.zone_a
         raise ValueError(f"Zone '{zone.name}' is not part of this connection.")
+
+
+class ParsedConnection:
+    def __init__(self,
+                 zone_a: str, zone_b: str,
+                 max_capacity: int = 1) -> None:
+        self.zone_a = zone_a
+        self.zone_b = zone_b
+        self.max_capacity = max_capacity
 
 
 class Drone:
@@ -101,14 +111,15 @@ class Graph:
         if zone_b_name not in self.zones:
             raise ValueError(f"Unknown zone '{zone_b_name}'.")
 
-        key = tuple(sorted((zone_a_name, zone_b_name)))
+        a, b = sorted((zone_a_name, zone_b_name))
+        key: tuple[str, str] = (a, b)
 
         if key in self.__connection_keys:
             raise ValueError("Duplicate connection"
                              f" '{zone_a_name}-{zone_b_name}'.")
 
         self.__connection_keys.add(key)
-        
+
         zone_a = self.zones[zone_a_name]
         zone_b = self.zones[zone_b_name]
         conn = Connection(zone_a, zone_b, max_capacity)
@@ -119,8 +130,8 @@ class Graph:
     def get_zone(self, name: str) -> Zone:
         if name not in self.zones:
             raise ValueError(f"Zone '{name}' not found.")
-        return self.zones.get(name)
-    
+        return self.zones.get(name, self.zones[name])
+
     def get_accessible_neighbours(self, zone: Zone) -> List[Zone]:
         result = []
         for conn in zone.neighbours:

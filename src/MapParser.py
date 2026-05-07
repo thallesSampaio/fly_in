@@ -1,4 +1,4 @@
-from src.models import Zone, Connection, ZoneType, Drone, Graph
+from src.models import (Zone, ZoneType, Drone, Graph, ParsedConnection)
 from typing import List
 
 
@@ -29,7 +29,7 @@ class MapParser:
                 if first_valid_line:
                     if key != "nb_drones":
                         raise ValueError(f"Line {i}: First line must define"
-                                        " nb_drones.")
+                                         " nb_drones.")
                     first_valid_line = False
 
                 if key != "hub" and key != "connection":
@@ -49,8 +49,9 @@ class MapParser:
                     graph.add_zone(zone)
                     dup_helper.add(key)
                 elif key == "connection":
-                    conn: Connection = cls.__parse_connection(i, value)
-                    graph.add_connection(conn.zone_a, conn.zone_b, conn.max_capacity)
+                    conn: ParsedConnection = cls.__parse_connection(i, value)
+                    graph.add_connection(conn.zone_a,
+                                         conn.zone_b, conn.max_capacity)
                 elif key == "nb_drones":
                     list_drones = cls.__parse_nb_drones(i, value)
                     dup_helper.add(key)
@@ -63,17 +64,17 @@ class MapParser:
 
         return (graph, list_drones)
 
-    
     @classmethod
     def __parse_nb_drones(cls, line_number: int, value: str) -> list[Drone]:
         try:
             nb_drones = int(value)
         except ValueError:
-            raise ValueError(f"Line {line_number}: nb_drones must be an integer.")
+            raise ValueError(f"Line {line_number}:"
+                             " nb_drones must be an integer.")
 
         if nb_drones < 1:
             raise ValueError(f"Line {line_number}: nb_drones must be positive"
-                              " and higher than 0.")
+                             " and higher than 0.")
 
         return [Drone(i) for i in range(1, nb_drones + 1)]
 
@@ -117,14 +118,15 @@ class MapParser:
             raise ValueError(f"Line {line_number}:"
                              " max_drones must be an integer.")
         if max_drones < 1:
-                raise ValueError(f"Line {line_number}: max_drones"
-                                 " must be higher than 0.")
+            raise ValueError(f"Line {line_number}: max_drones"
+                             " must be higher than 0.")
 
         return Zone(name=name, x=x, y=y, zone_type=zone_type, color=color,
                     max_drones=max_drones)
 
     @classmethod
-    def __parse_connection(cls, line_number: int, value: str) -> Connection:
+    def __parse_connection(cls, line_number: int,
+                           value: str) -> ParsedConnection:
         parts = value.split()
         if len(parts) < 1:
             raise ValueError(f"Line {line_number}: Empty connection.")
@@ -165,11 +167,11 @@ class MapParser:
                              f"'{capacity}' must be an integer.")
 
         if max_capacity < 1:
-                raise ValueError(f"Line {line_number}: max_capacity"
-                                 " must be higher than 0.")
-        
-        return Connection(zone_a=zone_a, zone_b=zone_b,
-                          max_capacity=max_capacity)
+            raise ValueError(f"Line {line_number}: max_capacity"
+                             " must be higher than 0.")
+
+        return ParsedConnection(zone_a=zone_a, zone_b=zone_b,
+                                max_capacity=max_capacity)
 
     @classmethod
     def __parse_metadata(cls, line_number: int,

@@ -1,5 +1,4 @@
 from src.MapParser import MapParser
-from src.models import Zone, Drone
 import sys
 
 
