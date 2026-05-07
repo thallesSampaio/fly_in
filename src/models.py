@@ -54,6 +54,12 @@ class Connection:
         self.zone_b = zone_b
         self.max_capacity = max_capacity
         self.current_traversing: int = 0
+    
+    def get_other(self, zone: Zone) -> Zone:
+        if zone == self.zone_a:
+            return self.zone_b
+        return self.zone_a
+        raise ValueError(f"Zone '{zone.name}' is not part of this connection.")
 
 
 class Drone:
@@ -74,11 +80,11 @@ class Graph:
         self.connections: List[Connection] = []
         self.start_zone: Optional[Zone] = None
         self.end_zone: Optional[Zone] = None
-        self.connection_keys: set[tuple[str, str]] = set()
+        self.__connection_keys: set[tuple[str, str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
         if zone.name in self.zones:
-            raise ValueError(f"Duplicate zone '{zone.name}'")
+            raise ValueError(f"Duplicate zone '{zone.name}'.")
 
         self.zones[zone.name] = zone
         if zone.is_start:
@@ -90,18 +96,18 @@ class Graph:
                        zone_b_name: str,
                        max_capacity: int = 1) -> None:
         if zone_a_name not in self.zones:
-            raise ValueError(f"Unknown zone '{zone_a_name}'")
+            raise ValueError(f"Unknown zone '{zone_a_name}'.")
 
         if zone_b_name not in self.zones:
-            raise ValueError(f"Unknown zone '{zone_b_name}'")
+            raise ValueError(f"Unknown zone '{zone_b_name}'.")
 
         key = tuple(sorted((zone_a_name, zone_b_name)))
 
-        if key in self.connection_keys:
+        if key in self.__connection_keys:
             raise ValueError("Duplicate connection"
-                             f"'{zone_a_name}-{zone_b_name}'")
+                             f" '{zone_a_name}-{zone_b_name}'.")
 
-        self.connection_keys.add(key)
+        self.__connection_keys.add(key)
         
         zone_a = self.zones[zone_a_name]
         zone_b = self.zones[zone_b_name]
@@ -110,8 +116,18 @@ class Graph:
         zone_a.neighbours.append(conn)
         zone_b.neighbours.append(conn)
 
-    def get_zone(self, name: str) -> Optional[Zone]:
+    def get_zone(self, name: str) -> Zone:
+        if name not in self.zones:
+            raise ValueError(f"Zone '{name}' not found.")
         return self.zones.get(name)
+    
+    def get_accessible_neighbours(self, zone: Zone) -> List[Zone]:
+        result = []
+        for conn in zone.neighbours:
+            neighbor = conn.get_other(zone)
+            if neighbor.zone_type != ZoneType.BLOCKED:
+                result.append(neighbor)
+        return result
 
     def debug_print(self) -> None:
         print("=== GRAPH ===\n")
