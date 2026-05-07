@@ -1,4 +1,5 @@
 from src.MapParser import MapParser
+from src.pathfinder import Pathfinder
 import sys
 
 
@@ -10,8 +11,11 @@ if __name__ == "__main__":
             res = MapParser.load_data(sys.argv[1])
             graph = res[0]
             drones = res[1]
+            pathfinder = Pathfinder(graph)
             graph.debug_print()
             for item in drones:
                 print(item.drone_id)
+            path = pathfinder.bfs()
+            print(" -> ".join(zone.name for zone in path))
         except Exception as e:
             print(e)
