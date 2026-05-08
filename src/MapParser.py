@@ -3,6 +3,7 @@ from typing import List
 
 
 class MapParser:
+    """Class responsible for parsing and validating map files."""
 
     valid_keys: list[str] = [
         "nb_drones", "start_hub", "end_hub",
@@ -13,6 +14,7 @@ class MapParser:
     @classmethod
     def load_data(cls, filename: str) -> tuple[Graph, List[Drone]]:
         """Load data from the map files"""
+
         graph = Graph()
         list_drones: list[Drone] = []
         dup_helper: set[str] = set()
@@ -66,6 +68,8 @@ class MapParser:
 
     @classmethod
     def __parse_nb_drones(cls, line_number: int, value: str) -> list[Drone]:
+        """Parse and validate nb_drones line."""
+
         try:
             nb_drones = int(value)
         except ValueError:
@@ -80,6 +84,8 @@ class MapParser:
 
     @classmethod
     def __parse_hub(cls, line_number: int, value: str) -> Zone:
+        """Parse and validate hub line."""
+
         valid_metadata = {"zone", "color", "max_drones"}
         parts = value.split()
         if len(parts) < 3:
@@ -127,6 +133,8 @@ class MapParser:
     @classmethod
     def __parse_connection(cls, line_number: int,
                            value: str) -> ParsedConnection:
+        """Parse and validate conneciton line."""
+
         parts = value.split()
         if len(parts) < 1:
             raise ValueError(f"Line {line_number}: Empty connection.")
@@ -176,6 +184,8 @@ class MapParser:
     @classmethod
     def __parse_metadata(cls, line_number: int,
                          metadata: str) -> dict[str, str]:
+        """Parse and validate metadata."""
+
         if not metadata:
             return {}
 
@@ -209,6 +219,8 @@ class MapParser:
 
     @classmethod
     def __parse_key_value(cls, line_number: int, line: str) -> tuple[str, str]:
+        """Read line, split key-value and validate."""
+
         if ":" not in line:
             raise ValueError(f"Line {line_number}: Missing ':'.")
 
