@@ -3,7 +3,7 @@ from enum import Enum
 
 
 class ZoneType(Enum):
-    """zone type enum"""
+    """It represents the types of zones.s"""
 
     NORMAL = "normal"
     BLOCKED = "blocked"
@@ -11,12 +11,15 @@ class ZoneType(Enum):
     PRIORITY = "priority"
 
     def movement_cost(self) -> int:
+        """Return the turns needed to pass through an zone."""
         if self == ZoneType.RESTRICTED:
             return 2
         return 1
 
 
 class Zone:
+    """Represents a node in a graph."""
+
     def __init__(self,
                  name: str, x: int, y: int,
                  zone_type: ZoneType = ZoneType.NORMAL,
@@ -35,18 +38,26 @@ class Zone:
         self.current_drones: Set[int] = set()
 
     def has_capacity(self) -> bool:
+        """Returns whether this node has the capacity to store new drones."""
+
         if self.is_start or self.is_end:
             return True
         return len(self.current_drones) < self.max_drones
 
     def add_drone(self, drone_id: int) -> None:
+        """Add a drone ID to the current_drones set."""
+
         self.current_drones.add(drone_id)
 
     def remove_drone(self, drone_id: int) -> None:
+        """Remove a drone ID from the current_drones set."""
+
         self.current_drones.discard(drone_id)
 
 
 class Connection:
+    """Represents an edge in a graph."""
+
     def __init__(self,
                  zone_a: Zone, zone_b: Zone,
                  max_capacity: int = 1) -> None:
@@ -56,6 +67,9 @@ class Connection:
         self.current_traversing: int = 0
 
     def get_other(self, zone: Zone) -> Zone:
+        """Receives a node representing the current zone
+        and returns the other zone on that edge."""
+
         if zone == self.zone_a:
             return self.zone_b
         elif zone == self.zone_b:
@@ -64,6 +78,7 @@ class Connection:
 
 
 class ParsedConnection:
+    """Represents an edge as a string before becoming a Connection object."""
     def __init__(self,
                  zone_a: str, zone_b: str,
                  max_capacity: int = 1) -> None:
@@ -73,6 +88,8 @@ class ParsedConnection:
 
 
 class Drone:
+    """Represents a drone."""
+
     def __init__(self, drone_id: int) -> None:
         self.drone_id = drone_id
         self.current_zone: Optional[Zone] = None
@@ -84,11 +101,14 @@ class Drone:
         # self.transit_turns_left: int = 0
 
     def get_next_zone(self) -> Optional[Zone]:
+        """Gets the next zone in the list of paths."""
+
         if self.path_index + 1 < len(self.path):
             return self.path[self.path_index + 1]
         return None
 
     def move_to_next(self) -> None:
+        """Move the drone to the next zone in the list of paths."""
         next_zone = self.get_next_zone()
 
         if next_zone is None:
@@ -103,6 +123,8 @@ class Drone:
 
 
 class Graph:
+    """Represents a graph constructed from map data."""
+
     def __init__(self) -> None:
         self.zones: Dict[str, Zone] = {}
         self.connections: List[Connection] = []
@@ -111,6 +133,8 @@ class Graph:
         self.__connection_keys: set[tuple[str, str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
+        """Add a Node to the graph."""
+
         if zone.name in self.zones:
             raise ValueError(f"Duplicate zone '{zone.name}'.")
 
@@ -123,6 +147,8 @@ class Graph:
     def add_connection(self, zone_a_name: str,
                        zone_b_name: str,
                        max_capacity: int = 1) -> None:
+        """Add an edge to the graph."""
+
         if zone_a_name not in self.zones:
             raise ValueError(f"Unknown zone '{zone_a_name}'.")
 
@@ -146,11 +172,15 @@ class Graph:
         zone_b.neighbours.append(conn)
 
     def get_zone(self, name: str) -> Zone:
+        """Get a zone by name."""
         if name not in self.zones:
             raise ValueError(f"Zone '{name}' not found.")
         return self.zones.get(name, self.zones[name])
 
     def get_accessible_neighbours(self, zone: Zone) -> List[Zone]:
+        """Gets the accessible zones connected to the zone
+        passed as a parameter."""
+
         result = []
         for conn in zone.neighbours:
             neighbor = conn.get_other(zone)
