@@ -26,7 +26,7 @@ class Simulator:
     def _assign_paths(self) -> None:
         path = Pathfinder(self.graph)
         for drone in self.drones:
-            drone.path = path.bfs()
+            drone.path = path.dijkstra()
             drone.in_transit = True
             drone.current_zone = self.graph.start_zone
             self.graph.start_zone.add_drone(drone.drone_id)
@@ -56,6 +56,8 @@ class Simulator:
             if drone.current_zone == self.graph.end_zone:
                 drone.delivered = True
                 drone.current_zone.remove_drone(drone.drone_id)
+                drone.current_zone = self.graph.end_zone
+                self.graph.end_zone.add_drone(drone.drone_id)
 
         return turn_log
 

@@ -177,7 +177,7 @@ class Graph:
             raise ValueError(f"Zone '{name}' not found.")
         return self.zones.get(name, self.zones[name])
 
-    def get_accessible_neighbours(self, zone: Zone) -> List[Zone]:
+    def get_valid_neighbours(self, zone: Zone) -> List[Zone]:
         """Gets the accessible zones connected to the zone
         passed as a parameter."""
 
