@@ -1,6 +1,7 @@
 from src.models import Graph, Drone
 from src.pathfinder import Pathfinder
 from typing import List
+from src.view import TerminalVisualizer
 
 
 class Simulator:
@@ -10,11 +11,17 @@ class Simulator:
         self.turns: List[List[str]] = []
 
     def run(self) -> None:
+        visualizer = TerminalVisualizer()
         self._assign_paths()
+        visualizer.display_initial_state(zones=self.graph.zones.values())
         while not self._all_delivered():
             turn_output = self._process_turn()
             if turn_output:
                 self.turns.append(turn_output)
+                visualizer.display_turn_status(
+                    turn_number=len(self.turns),
+                    zones=list(self.graph.zones.values()),
+                    moves=turn_output)
 
     def _assign_paths(self) -> None:
         path = Pathfinder(self.graph)
@@ -22,6 +29,7 @@ class Simulator:
             drone.path = path.bfs()
             drone.in_transit = True
             drone.current_zone = self.graph.start_zone
+            self.graph.start_zone.add_drone(drone.drone_id)
 
     def _process_turn(self) -> List[str]:
         turn_log: List[str] = []
