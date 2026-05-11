@@ -98,7 +98,31 @@ class Drone:
         self.delivered: bool = False
         self.in_transit: bool = False
         self.transit_dest: Optional[Zone] = None
-        # self.transit_turns_left: int = 0
+        self.transit_turns_left: int = 0
+
+    def start_transit(self, next_zone: Zone) -> None:
+        """Start moving toward a restricted zone. (2 turns)."""
+
+        if self.current_zone is not None:
+            self.current_zone.remove_drone(self.drone_id)
+        self.in_transit = True
+        self.transit_dest = next_zone
+        self.transit_turns_left = next_zone.zone_type.movement_cost() - 1
+        self.path_index += 1
+
+    def finish_transit(self) -> None:
+        """Arrive at the restricted zone."""
+
+        if self.transit_dest is None:
+            return
+
+        self.current_zone = self.transit_dest
+        self.current_zone.add_drone(self.drone_id)
+        self.path_index += 1
+
+        self.in_transit = False
+        self.transit_dest = None
+        self.transit_turns_left = 0
 
     def get_next_zone(self) -> Optional[Zone]:
         """Gets the next zone in the list of paths."""
@@ -187,6 +211,14 @@ class Graph:
             if neighbor.zone_type != ZoneType.BLOCKED:
                 result.append(neighbor)
         return result
+
+    def get_connection_between(self, zone_a: Zone,
+                               zone_b: Zone) -> Connection | None:
+        for connection in zone_a.neighbours:
+            if connection.get_other(zone_a) == zone_b:
+                return connection
+
+        return None
 
     def debug_print(self) -> None:
         print("=== GRAPH ===\n")

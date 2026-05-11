@@ -1,4 +1,4 @@
-from src.models import Graph, Drone
+from src.models import Graph, Drone, ZoneType, Connection
 from src.pathfinder import Pathfinder
 from typing import List
 from src.view import TerminalVisualizer
@@ -16,6 +16,19 @@ class Simulator:
         visualizer.display_initial_state(zones=self.graph.zones.values())
         while not self._all_delivered():
             turn_output = self._process_turn()
+            for drone in self.drones:
+                print(
+                    f"D{drone.drone_id} | "
+                    f"delivered={drone.delivered} | "
+                    f"in_transit={drone.in_transit} | "
+                    f"current={drone.current_zone.name if drone.current_zone else None} | " # noqa
+                    f"next={drone.get_next_zone().name if drone.get_next_zone() else None} | " # noqa
+                    f"path_index={drone.path_index}"
+                )
+            if not turn_output:
+                raise RuntimeError("Simulation stopped: no drone moved this"
+                                   " turn. "
+                                   "Possible deadlock or capacity issue.")
             if turn_output:
                 self.turns.append(turn_output)
                 visualizer.display_turn_status(
@@ -27,15 +40,37 @@ class Simulator:
         path = Pathfinder(self.graph)
         for drone in self.drones:
             drone.path = path.dijkstra()
-            drone.in_transit = True
             drone.current_zone = self.graph.start_zone
             self.graph.start_zone.add_drone(drone.drone_id)
 
     def _process_turn(self) -> List[str]:
         turn_log: List[str] = []
+        moved_this_turn: set[int] = set()
+        used_connections: dict[Connection, int] = {}
 
         for drone in self.drones:
-            if drone.delivered:
+            if drone.delivered or not drone.in_transit:
+                continue
+
+            drone.transit_turns_left -= 1
+
+            if drone.transit_turns_left == 0:
+                drone.finish_transit()
+
+                if drone.current_zone is None:
+                    continue
+
+                turn_log.append(f"D{drone.drone_id}-{drone.current_zone.name}")
+                moved_this_turn.add(drone.drone_id)
+
+                if drone.current_zone == self.graph.end_zone:
+                    drone.delivered = True
+
+        for drone in self.drones:
+            if drone.delivered or drone.in_transit:
+                continue
+
+            if drone.drone_id in moved_this_turn:
                 continue
 
             next_zone = drone.get_next_zone()
@@ -43,10 +78,40 @@ class Simulator:
             if next_zone is None:
                 continue
 
+            if drone.current_zone is None:
+                continue
+
             if not next_zone.has_capacity():
                 continue
 
+            connection = self.graph.get_connection_between(
+                drone.current_zone,
+                next_zone,
+            )
+
+            if connection is None:
+                continue
+
+            current_usage = used_connections.get(connection, 0)
+
+            if current_usage >= connection.max_capacity:
+                continue
+
+            if next_zone.zone_type == ZoneType.RESTRICTED:
+                conn_name = f"{drone.current_zone.name}-{next_zone.name}"
+
+                drone.start_transit(next_zone)
+
+                used_connections[connection] = current_usage + 1
+                moved_this_turn.add(drone.drone_id)
+                turn_log.append(f"D{drone.drone_id}-{conn_name}")
+
+                continue
+
             drone.move_to_next()
+
+            used_connections[connection] = current_usage + 1
+            moved_this_turn.add(drone.drone_id)
 
             if drone.current_zone is None:
                 continue
@@ -55,9 +120,6 @@ class Simulator:
 
             if drone.current_zone == self.graph.end_zone:
                 drone.delivered = True
-                drone.current_zone.remove_drone(drone.drone_id)
-                drone.current_zone = self.graph.end_zone
-                self.graph.end_zone.add_drone(drone.drone_id)
 
         return turn_log
 
