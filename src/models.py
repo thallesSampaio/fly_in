@@ -58,13 +58,12 @@ class Zone:
 class Connection:
     """Represents an edge in a graph."""
 
-    def __init__(self,
-                 zone_a: Zone, zone_b: Zone,
+    def __init__(self, zone_a: Zone, zone_b: Zone,
                  max_capacity: int = 1) -> None:
         self.zone_a = zone_a
         self.zone_b = zone_b
         self.max_capacity = max_capacity
-        self.current_traversing: int = 0
+        self.current_drones: Set[int] = set()
 
     def get_other(self, zone: Zone) -> Zone:
         """Receives a node representing the current zone
@@ -76,11 +75,19 @@ class Connection:
             return self.zone_a
         raise ValueError(f"Zone '{zone.name}' is not part of this connection.")
 
+    def has_capacity(self) -> bool:
+        return len(self.current_drones) < self.max_capacity
+    
+    def enter(self, drone_id: int) -> None:
+        self.current_drones.add(drone_id)
+    
+    def leave(self, drone_id: int) -> None:
+        self.current_drones.discard(drone_id)
+
 
 class ParsedConnection:
     """Represents an edge as a string before becoming a Connection object."""
-    def __init__(self,
-                 zone_a: str, zone_b: str,
+    def __init__(self, zone_a: str, zone_b: str,
                  max_capacity: int = 1) -> None:
         self.zone_a = zone_a
         self.zone_b = zone_b
@@ -96,19 +103,23 @@ class Drone:
         self.path: List[Zone] = []
         self.path_index: int = 0
         self.delivered: bool = False
-        self.in_transit: bool = False
+        self.current_connection: Optional[Connection] = None
         self.transit_dest: Optional[Zone] = None
         self.transit_turns_left: int = 0
 
-    def start_transit(self, next_zone: Zone) -> None:
+    def start_transit(self, next_zone: Zone, connection: Connection) -> None:
         """Start moving toward a restricted zone. (2 turns)."""
+
+        if not connection.has_capacity():
+            return
 
         if self.current_zone is not None:
             self.current_zone.remove_drone(self.drone_id)
-        self.in_transit = True
+
+        connection.enter(self.drone_id)
+        self.current_connection = connection
         self.transit_dest = next_zone
         self.transit_turns_left = next_zone.zone_type.movement_cost() - 1
-        self.path_index += 1
 
     def finish_transit(self) -> None:
         """Arrive at the restricted zone."""
@@ -116,11 +127,14 @@ class Drone:
         if self.transit_dest is None:
             return
 
+        if self.current_connection is not None:
+            self.current_connection.leave(self.drone_id)
+
         self.current_zone = self.transit_dest
         self.current_zone.add_drone(self.drone_id)
         self.path_index += 1
 
-        self.in_transit = False
+        self.current_connection = None
         self.transit_dest = None
         self.transit_turns_left = 0
 
