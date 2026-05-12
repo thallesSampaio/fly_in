@@ -77,10 +77,10 @@ class Connection:
 
     def has_capacity(self) -> bool:
         return len(self.current_drones) < self.max_capacity
-    
+
     def enter(self, drone_id: int) -> None:
         self.current_drones.add(drone_id)
-    
+
     def leave(self, drone_id: int) -> None:
         self.current_drones.discard(drone_id)
 

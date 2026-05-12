@@ -1,4 +1,4 @@
-from src.models import Graph, Drone, ZoneType, Connection
+from src.models import Graph, Drone, ZoneType
 from src.pathfinder import Pathfinder
 from typing import List
 # from src.view import TerminalVisualizer
@@ -16,19 +16,19 @@ class Simulator:
         # visualizer.display_initial_state(zones=self.graph.zones.values())
         while not self._all_delivered():
             turn_output = self._process_turn()
-            for drone in self.drones:
-                print(
-                    f"D{drone.drone_id} | "
-                    f"delivered={drone.delivered} | "
-                    f"in_transit={drone.current_connection} | "
-                    f"current={drone.current_zone.name if drone.current_zone else None} | " # noqa
-                    f"next={drone.get_next_zone().name if drone.get_next_zone() else None} | " # noqa
-                    f"path_index={drone.path_index}"
-                )
-            if not turn_output:
-                raise RuntimeError("Simulation stopped: no drone moved this"
-                                   " turn. "
-                                   "Possible deadlock or capacity issue.")
+            # for drone in self.drones:
+            #     print(
+            #         f"D{drone.drone_id} | "
+            #         f"delivered={drone.delivered} | "
+            #         f"in_transit={drone.current_connection} | "
+            #         f"current={drone.current_zone.name if drone.current_zone else None} | " # noqa
+            #         f"next={drone.get_next_zone().name if drone.get_next_zone() else None} | " # noqa
+            #         f"path_index={drone.path_index}"
+            #     )
+            # if not turn_output:
+            #     raise RuntimeError("Simulation stopped: no drone moved this"
+            #                        " turn. "
+            #                        "Possible deadlock or capacity issue.")
             if turn_output:
                 self.turns.append(turn_output)
                 # visualizer.display_turn_status(
@@ -41,24 +41,24 @@ class Simulator:
         for drone in self.drones:
             drone.path = path.dijkstra()
             drone.current_zone = self.graph.start_zone
-            self.graph.start_zone.add_drone(drone.drone_id)
+            if drone.current_zone is not None:
+                drone.current_zone.add_drone(drone.drone_id)
 
     def _process_turn(self) -> List[str]:
         turn_log: List[str] = []
         moved_this_turn: set[int] = set()
-        used_conns: dict[Connection, int] = {}
 
         self._finish_transits(turn_log, moved_this_turn)
 
         for drone in self.drones:
             if (drone.delivered or drone.current_connection is not None or
-                drone.drone_id in moved_this_turn):
+                    drone.drone_id in moved_this_turn):
                 continue
 
             next_zone = drone.get_next_zone()
 
             if (next_zone is None or drone.current_zone is None or
-                not next_zone.has_capacity()):
+                    not next_zone.has_capacity()):
                 continue
 
             connection = self.graph.get_connection_between(drone.current_zone,
@@ -106,7 +106,7 @@ class Simulator:
     def display_results(self) -> None:
         for turn_moves in self.turns:
             print(" ".join(turn_moves))
-    
+
     def _finish_transits(self, turn_log: List[str],
                          moved_this_turn: set[int]) -> None:
 
