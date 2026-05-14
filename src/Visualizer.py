@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from src.models import Graph, Zone, ZoneType
+from src.models import Graph, Zone, ZoneType, Drone
 
 
 class GraphView:
@@ -13,8 +13,9 @@ class GraphView:
     DRONE_RADIUS = 10
     LINE_WIDTH = 5
 
-    def __init__(self, graph: Graph):
+    def __init__(self, graph: Graph, drones: list[Drone]):
         self.graph = graph
+        self.drones = drones
 
         self.scale = 100
         self.min_x = 0
@@ -31,6 +32,11 @@ class GraphView:
             height=self.WINDOW_HEIGHT,
             bg="#1e1e1e"
         )
+        self.on_next_turn = None
+        self.next_button = tk.Button(self.root,
+                                     text="Next Turn",
+                                     command=self.__handle_next_turn)
+        self.next_button.pack()
         self.canvas.pack(fill="both", expand=True)
 
     def run(self) -> None:
@@ -42,6 +48,15 @@ class GraphView:
         self.__draw_connections()
         self.__draw_zones()
         self.__draw_drones()
+        self.__draw_drones_on_connections()
+
+    def __handle_next_turn(self) -> None:
+        if self.on_next_turn is not None:
+            self.on_next_turn()
+            self.draw()
+
+    def set_on_next_turn(self, callback) -> None:
+        self.on_next_turn = callback
 
     def __fit_graph_to_window(self) -> None:
         """Calculate a simple scale so the whole graph fits on screen."""
@@ -69,6 +84,16 @@ class GraphView:
 
             self.canvas.create_line(x1, y1, x2, y2, fill="white",
                                     width=self.LINE_WIDTH)
+            mid_x = (x1 + x2) / 2
+            mid_y = (y1 + y2) / 2
+
+            self.canvas.create_text(
+                mid_x,
+                mid_y - 15,
+                text=f"cap={connection.max_capacity}",
+                fill="white",
+                font=("Arial", 9, "bold")
+            )
 
     def __draw_zones(self) -> None:
         for zone in self.graph.zones.values():
@@ -111,6 +136,36 @@ class GraphView:
                     drone_x, drone_y,
                     text=f"D{drone_id}",
                     fill="black", font=("Arial", 8, "bold"),)
+
+    def __draw_drones_on_connections(self) -> None:
+        for drone in self.drones:
+            if drone.current_connection is None:
+                continue
+
+            connection = drone.current_connection
+
+            x1, y1 = self.__zone_coords(connection.zone_a)
+            x2, y2 = self.__zone_coords(connection.zone_b)
+
+            drone_x = (x1 + x2) / 2
+            drone_y = (y1 + y2) / 2
+
+            self.canvas.create_oval(
+                drone_x - self.DRONE_RADIUS,
+                drone_y - self.DRONE_RADIUS,
+                drone_x + self.DRONE_RADIUS,
+                drone_y + self.DRONE_RADIUS,
+                fill="cyan",
+                outline="black"
+            )
+
+            self.canvas.create_text(
+                drone_x,
+                drone_y,
+                text=f"D{drone.drone_id}",
+                fill="black",
+                font=("Arial", 8, "bold")
+            )
 
     def __zone_coords(self, zone: Zone) -> tuple[float, float]:
         x = (zone.x - self.min_x) * self.scale + self.PADDING

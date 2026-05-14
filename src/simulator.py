@@ -9,12 +9,21 @@ class Simulator:
         self.drones = drones
         self.turns: List[List[str]] = []
 
-    def run(self) -> None:
+    def setup(self) -> None:
         self._assign_paths()
+
+    def step(self) -> List[str]:
+        if self._all_delivered():
+            return []
+        turn_output = self._process_turn()
+        if turn_output:
+            self.turns.append(turn_output)
+        return turn_output
+
+    def run(self) -> None:
+        self.setup()
         while not self._all_delivered():
-            turn_output = self._process_turn()
-            if turn_output:
-                self.turns.append(turn_output)
+            self.step()
 
     def _assign_paths(self) -> None:
         path = Pathfinder(self.graph)
