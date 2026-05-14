@@ -1,7 +1,6 @@
 from src.models import Graph, Drone, ZoneType
 from src.pathfinder import Pathfinder
 from typing import List
-# from src.view import TerminalVisualizer
 
 
 class Simulator:
@@ -11,30 +10,11 @@ class Simulator:
         self.turns: List[List[str]] = []
 
     def run(self) -> None:
-        # visualizer = TerminalVisualizer()
         self._assign_paths()
-        # visualizer.display_initial_state(zones=self.graph.zones.values())
         while not self._all_delivered():
             turn_output = self._process_turn()
-            # for drone in self.drones:
-            #     print(
-            #         f"D{drone.drone_id} | "
-            #         f"delivered={drone.delivered} | "
-            #         f"in_transit={drone.current_connection} | "
-            #         f"current={drone.current_zone.name if drone.current_zone else None} | " # noqa
-            #         f"next={drone.get_next_zone().name if drone.get_next_zone() else None} | " # noqa
-            #         f"path_index={drone.path_index}"
-            #     )
-            # if not turn_output:
-            #     raise RuntimeError("Simulation stopped: no drone moved this"
-            #                        " turn. "
-            #                        "Possible deadlock or capacity issue.")
             if turn_output:
                 self.turns.append(turn_output)
-                # visualizer.display_turn_status(
-                #    turn_number=len(self.turns),
-                #    zones=list(self.graph.zones.values()),
-                #    moves=turn_output)
 
     def _assign_paths(self) -> None:
         path = Pathfinder(self.graph)
@@ -82,8 +62,6 @@ class Simulator:
 
             connection.enter(drone.drone_id)
             drone.move_to_next()
-            # connection.current_traversing += 1
-            # used_conns[connection] = current_usage + 1
             moved_this_turn.add(drone.drone_id)
             connection.leave(drone.drone_id)
 
