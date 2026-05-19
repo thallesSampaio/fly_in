@@ -56,6 +56,10 @@ class GraphView:
                                command=self._handle_next_turn,
                                font=("Arial", 13, "bold"))
         button.pack(side="top", pady=10)
+        # close_button = tk.Button(self.root, text="Close",
+        #                         command=self.root.destroy)
+
+        # close_button.pack(side="top")
 
         frame = ctk.CTkFrame(self.root)
         frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -110,7 +114,7 @@ class GraphView:
             x, y = self._zone_coords(zone)
             zone_color = self._get_zone_color(zone)
 
-            text_color = "white" if zone_color in ["#616161", "black"] else "black"
+            text_color = "white" if zone_color in ["black"] else "black"
 
             self.canvas.create_oval(
                 x - self.ZONE_RADIUS,
@@ -193,7 +197,7 @@ class GraphView:
         return x, y
 
     def _middle_point(self, x1: float, y1: float,
-                       x2: float, y2: float) -> tuple[float, float]:
+                      x2: float, y2: float) -> tuple[float, float]:
         return (x1 + x2) / 2, (y1 + y2) / 2
 
     def _get_zone_color(self, zone: Zone) -> str:
