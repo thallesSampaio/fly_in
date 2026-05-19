@@ -41,9 +41,9 @@ class Pathfinder:
         start = self.graph.start_zone
         end = self.graph.end_zone
 
-        heap: List[Tuple[int, str]] = [(0, start.name)]
+        heap: List[Tuple[float, str]] = [(0, start.name)]
         prev: Dict[str, Optional[Zone]] = {start.name: None}
-        dist: Dict[str, int] = {start.name: 0}
+        dist: Dict[str, float] = {start.name: 0}
 
         while heap:
             cost, current_name = heapq.heappop(heap)
