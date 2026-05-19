@@ -10,11 +10,13 @@ class ZoneType(Enum):
     RESTRICTED = "restricted"
     PRIORITY = "priority"
 
-    def movement_cost(self) -> int:
+    def movement_cost(self) -> float:
         """Return the turns needed to pass through an zone."""
         if self == ZoneType.RESTRICTED:
-            return 2
-        return 1
+            return 2.0
+        if self == ZoneType.PRIORITY:
+            return 0.5
+        return 1.0
 
 
 class Zone:
@@ -105,7 +107,7 @@ class Drone:
         self.delivered: bool = False
         self.current_connection: Optional[Connection] = None
         self.transit_dest: Optional[Zone] = None
-        self.transit_turns_left: int = 0
+        self.transit_turns_left: float = 0.0
 
     def start_transit(self, next_zone: Zone, connection: Connection) -> None:
         """Start moving toward a restricted zone. (2 turns)."""
@@ -119,7 +121,7 @@ class Drone:
         connection.enter(self.drone_id)
         self.current_connection = connection
         self.transit_dest = next_zone
-        self.transit_turns_left = next_zone.zone_type.movement_cost() - 1
+        self.transit_turns_left = next_zone.zone_type.movement_cost() - 1.0
 
     def finish_transit(self) -> None:
         """Arrive at the restricted zone."""
@@ -233,25 +235,3 @@ class Graph:
                 return connection
 
         return None
-
-    def debug_print(self) -> None:
-        print("=== GRAPH ===\n")
-
-        print("Zones:")
-        for zone in self.zones.values():
-            flags = []
-            if zone.is_start:
-                flags.append("START")
-            if zone.is_end:
-                flags.append("END")
-
-            flag_str = f" ({', '.join(flags)})" if flags else ""
-            print(f"- {zone.name}{flag_str} "
-                  f"[type={zone.zone_type.value}, cap={zone.max_drones}]")
-
-        print("\nConnections:")
-        for conn in self.connections:
-            print(f"- {conn.zone_a.name} <-> {conn.zone_b.name} "
-                  f"(cap={conn.max_capacity})")
-
-        print("\n================\n")
