@@ -26,10 +26,13 @@ class Simulator:
             self.step()
 
     def _assign_paths(self) -> None:
-        path = Pathfinder(self.graph)
-        for drone in self.drones:
-            drone.path = path.dijkstra()
+        pathfinder = Pathfinder(self.graph)
+        max_paths: int = len(self.graph.start_zone.neighbours)
+        paths = pathfinder._find_multiple_paths(self.drones, max_paths)
+        for index, drone in enumerate(self.drones):
+            drone.path = paths[index % len(paths)]
             drone.current_zone = self.graph.start_zone
+
             if drone.current_zone is not None:
                 drone.current_zone.add_drone(drone.drone_id)
 

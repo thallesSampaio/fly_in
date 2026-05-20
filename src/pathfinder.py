@@ -1,5 +1,5 @@
 from collections import deque
-from src.models import Graph, Zone
+from src.models import Graph, Zone, Drone
 from typing import List, Tuple, Dict, Optional
 import heapq
 
@@ -31,7 +31,7 @@ class Pathfinder:
                     queue.append((neighbor, path + [neighbor]))
         return []
 
-    def dijkstra(self) -> List[Zone]:
+    def dijkstra(self, blocked: Optional[set[str]] = None) -> List[Zone]:
         """trying to implement dijkstra"""
         if self.graph.start_zone is None:
             raise ValueError("Pathfinder - Error: missing start zone.")
@@ -56,6 +56,8 @@ class Pathfinder:
                 continue
 
             for neighbour in self.graph.get_valid_neighbours(current_zone):
+                if neighbour.name in blocked:
+                    continue
                 new_cost = cost + neighbour.zone_type.movement_cost()
                 if new_cost < dist.get(neighbour.name, float('inf')):
                     dist[neighbour.name] = new_cost
@@ -72,3 +74,24 @@ class Pathfinder:
             node = prev[node.name]
         path.reverse()
         return path
+
+    def _find_multiple_paths(self, drones: List[Drone],
+                             max_paths: int) -> list[list[Zone]]:
+        """Tenta encontrar multiplos caminhos apos bloquear a
+        primeira zona possivel no primeiro path encontrado"""
+        paths: list[list[Zone]] = []
+        blocked: set[str] = set()
+
+        for _ in range(max_paths):
+            path = self.dijkstra(blocked)
+            if path is None or len(path) < 2:
+                break
+
+            paths.append(path)
+            if len(path) > 2:
+                blocked.add(path[1].name)
+
+        if not paths:
+            raise ValueError("No path found.")
+
+        return paths
