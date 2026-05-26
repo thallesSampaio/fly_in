@@ -23,3 +23,4 @@ if __name__ == "__main__":
             print(len(sim.turns))
         except Exception as e:
             print(e)
+            sys.exit(1)

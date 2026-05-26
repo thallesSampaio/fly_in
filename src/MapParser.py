@@ -7,8 +7,7 @@ class MapParser:
 
     valid_keys: list[str] = [
         "nb_drones", "start_hub", "end_hub",
-        "hub", "connection"
-    ]
+        "hub", "connection"]
     zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
 
     @classmethod
@@ -22,7 +21,8 @@ class MapParser:
 
         with open(filename, "r") as file:
             for i, line in enumerate(file, 1):
-                line = line.strip()
+                line = line.split("#", 1)
+                line = line[0].strip()
                 if not line or line.startswith("#"):
                     continue
 
@@ -52,15 +52,20 @@ class MapParser:
                     dup_helper.add(key)
                 elif key == "connection":
                     conn: ParsedConnection = cls.__parse_connection(i, value)
-                    graph.add_connection(conn.zone_a,
-                                         conn.zone_b, conn.max_capacity)
+                    try:
+                        graph.add_connection(conn.zone_a,
+                                             conn.zone_b, conn.max_capacity)
+                    except ValueError as e:
+                        raise ValueError(f"Line {i}: {e.args[0]}")
                 elif key == "nb_drones":
                     list_drones = cls.__parse_nb_drones(i, value)
                     dup_helper.add(key)
 
-        required = {"nb_drones", "start_hub", "end_hub"}
-        missing = required - dup_helper
-
+        required = ["nb_drones", "start_hub", "end_hub"]
+        missing = []
+        for key in required:
+            if key not in dup_helper:
+                missing.append(key)
         if missing:
             raise ValueError(f"Missing required keys: {', '.join(missing)}.")
 
