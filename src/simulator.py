@@ -27,7 +27,9 @@ class Simulator:
 
     def _assign_paths(self) -> None:
         pathfinder = Pathfinder(self.graph)
-        max_paths: int = len(self.graph.start_zone.neighbours)
+        max_paths: int = 0
+        if self.graph.start_zone:
+            len(self.graph.start_zone.neighbours)
         paths = pathfinder._find_multiple_paths(self.drones, max_paths)
         for index, drone in enumerate(self.drones):
             drone.path = paths[index % len(paths)]

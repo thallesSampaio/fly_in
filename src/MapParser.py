@@ -21,8 +21,8 @@ class MapParser:
 
         with open(filename, "r") as file:
             for i, line in enumerate(file, 1):
-                line = line.split("#", 1)
-                line = line[0].strip()
+                line_splited = line.split("#", 1)
+                line = line_splited[0].strip()
                 if not line or line.startswith("#"):
                     continue
 

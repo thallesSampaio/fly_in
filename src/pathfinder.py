@@ -56,7 +56,7 @@ class Pathfinder:
                 continue
 
             for neighbour in self.graph.get_valid_neighbours(current_zone):
-                if neighbour.name in blocked:
+                if blocked and neighbour.name in blocked:
                     continue
                 new_cost = cost + neighbour.zone_type.movement_cost()
                 if new_cost < dist.get(neighbour.name, float('inf')):
