@@ -31,7 +31,7 @@ class Pathfinder:
                     queue.append((neighbor, path + [neighbor]))
         return []
 
-    def dijkstra(self, blocked: Optional[set[str]] = None) -> List[Zone]:
+    def dijkstra(self, blocked: set[str]) -> List[Zone]:
         """trying to implement dijkstra"""
         if self.graph.start_zone is None:
             raise ValueError("Pathfinder - Error: missing start zone.")
@@ -56,7 +56,7 @@ class Pathfinder:
                 continue
 
             for neighbour in self.graph.get_valid_neighbours(current_zone):
-                if blocked and neighbour.name in blocked:
+                if neighbour.name in blocked:
                     continue
                 new_cost = cost + neighbour.zone_type.movement_cost()
                 if new_cost < dist.get(neighbour.name, float('inf')):
