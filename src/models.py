@@ -150,8 +150,7 @@ class Drone:
     def move_to_next(self) -> None:
         """Move the drone to the next zone in the list of paths."""
         next_zone = self.get_next_zone()
-
-        if next_zone is None:
+        if next_zone is None or not next_zone.has_capacity():
             return
 
         if self.current_zone is not None:

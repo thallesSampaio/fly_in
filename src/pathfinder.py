@@ -1,5 +1,5 @@
 from collections import deque
-from src.models import Graph, Zone, Drone
+from src.models import Graph, Zone
 from typing import List, Tuple, Dict, Optional
 import heapq
 
@@ -75,23 +75,25 @@ class Pathfinder:
         path.reverse()
         return path
 
-    def _find_multiple_paths(self, drones: List[Drone],
-                             max_paths: int) -> list[list[Zone]]:
-        """Tenta encontrar multiplos caminhos apos bloquear a
-        primeira zona possivel no primeiro path encontrado"""
-        paths: list[list[Zone]] = []
-        blocked: set[str] = set()
-
-        for _ in range(max_paths):
-            path = self.dijkstra(blocked)
-            if path is None or len(path) < 2:
-                break
-
-            paths.append(path)
-            if len(path) > 2:
-                blocked.add(path[1].name)
-
-        if not paths:
+    def _find_multiple_paths(self, max_paths: int) -> list[list[Zone]]:
+        best = self.dijkstra(set())
+        if best is None:
             raise ValueError("No path found.")
 
-        return paths
+        found: list[list[Zone]] = [best]
+        seen: set[tuple[str, ...]] = {tuple(z.name for z in best)}
+
+        for zone in best[1:-1]:
+            path = self.dijkstra({zone.name})
+            if not path:
+                continue
+            key = tuple(z.name for z in path)
+            if key not in seen:
+                seen.add(key)
+                found.append(path)
+            if len(found) >= max_paths:
+                break
+        for item in found:
+            for zone in item:
+                print(f"PATH-{zone.name}")
+        return found

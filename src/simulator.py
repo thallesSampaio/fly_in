@@ -29,12 +29,11 @@ class Simulator:
         pathfinder = Pathfinder(self.graph)
         max_paths: int = 0
         if self.graph.start_zone:
-            len(self.graph.start_zone.neighbours)
-        paths = pathfinder._find_multiple_paths(self.drones, max_paths)
+            max_paths = len(self.graph.start_zone.neighbours)
+        paths = pathfinder._find_multiple_paths(max_paths)
         for index, drone in enumerate(self.drones):
             drone.path = paths[index % len(paths)]
             drone.current_zone = self.graph.start_zone
-
             if drone.current_zone is not None:
                 drone.current_zone.add_drone(drone.drone_id)
 
@@ -43,47 +42,32 @@ class Simulator:
         moved_this_turn: set[int] = set()
 
         self._finish_transits(turn_log, moved_this_turn)
-
         for drone in self.drones:
             if (drone.delivered or drone.current_connection is not None or
                     drone.drone_id in moved_this_turn):
                 continue
 
             next_zone = drone.get_next_zone()
-
-            if (next_zone is None or drone.current_zone is None or
-                    not next_zone.has_capacity()):
+            if not next_zone or not drone.current_zone:
                 continue
 
             connection = self.graph.get_connection_between(drone.current_zone,
                                                            next_zone)
-
-            if connection is None:
-                continue
-
-            if not connection.has_capacity():
+            if not connection or not connection.has_capacity():
                 continue
 
             if next_zone.zone_type == ZoneType.RESTRICTED:
                 conn_name = f"{drone.current_zone.name}-{next_zone.name}"
-
                 drone.start_transit(next_zone, connection)
-
                 moved_this_turn.add(drone.drone_id)
                 turn_log.append(f"D{drone.drone_id}-{conn_name}")
-
                 continue
 
-            connection.enter(drone.drone_id)
             drone.move_to_next()
             moved_this_turn.add(drone.drone_id)
-            connection.leave(drone.drone_id)
-
             if drone.current_zone is None:
                 continue
-
             turn_log.append(f"D{drone.drone_id}-{drone.current_zone.name}")
-
             if drone.current_zone == self.graph.end_zone:
                 drone.delivered = True
 
@@ -107,15 +91,12 @@ class Simulator:
                 continue
 
             drone.transit_turns_left -= 1
-
             if drone.transit_turns_left > 0:
                 continue
 
             drone.finish_transit()
-
             if drone.current_zone is None:
                 continue
-
             turn_log.append(f"D{drone.drone_id}-{drone.current_zone.name}")
             moved_this_turn.add(drone.drone_id)
 
