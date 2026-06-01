@@ -6,6 +6,7 @@ import heapq
 
 class Pathfinder:
     def __init__(self, graph: Graph) -> None:
+        """Find valid paths between the start and end zones of a graph."""
         self.graph = graph
 
     def bfs(self) -> List[Zone]:
@@ -32,7 +33,7 @@ class Pathfinder:
         return []
 
     def dijkstra(self, blocked: set[str]) -> List[Zone]:
-        """trying to implement dijkstra"""
+        """Find the lowest-cost path while avoiding blocked zones."""
         if self.graph.start_zone is None:
             raise ValueError("Pathfinder - Error: missing start zone.")
         if self.graph.end_zone is None:
@@ -76,9 +77,10 @@ class Pathfinder:
         return path
 
     def _find_multiple_paths(self, max_paths: int) -> list[list[Zone]]:
+        """Try to find multiple alternative paths from start to end."""
         best = self.dijkstra(set())
-        if best is None:
-            raise ValueError("No path found.")
+        if not best:
+            raise ValueError("No valid path found.")
 
         found: list[list[Zone]] = [best]
         seen: set[tuple[str, ...]] = {tuple(z.name for z in best)}
