@@ -6,14 +6,13 @@ from src.models import Graph, Zone, ZoneType, Drone
 
 
 class GraphView:
-    WINDOW_WIDTH = 1200
-    WINDOW_HEIGHT = 800
+    WINDOW_WIDTH = 1800
+    WINDOW_HEIGHT = 1200
 
-    PADDING = 100
-    SCALE = 120
+    SCALE = 240
 
-    ZONE_RADIUS = 45
-    DRONE_RADIUS = 10
+    ZONE_RADIUS = 60
+    DRONE_RADIUS = 15
 
     def __init__(self, graph: Graph, drones: list[Drone]) -> None:
         self.graph = graph
@@ -54,12 +53,8 @@ class GraphView:
 
         button = ctk.CTkButton(self.root, text="Next Turn",
                                command=self._handle_next_turn,
-                               font=("Arial", 13, "bold"))
+                               font=("Arial", 15, "bold"))
         button.pack(side="top", pady=10)
-        # close_button = tk.Button(self.root, text="Close",
-        #                         command=self.root.destroy)
-
-        # close_button.pack(side="top")
 
         frame = ctk.CTkFrame(self.root)
         frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -116,7 +111,7 @@ class GraphView:
 
             text_color = "white" if zone_color in ["black"] else "black"
 
-            self.canvas.create_oval(
+            self.canvas.create_rectangle(
                 x - self.ZONE_RADIUS,
                 y - self.ZONE_RADIUS,
                 x + self.ZONE_RADIUS,
@@ -129,20 +124,27 @@ class GraphView:
                 x, y - 7,
                 text=zone.name,
                 fill=text_color,
-                font=("Arial", 8, "bold"))
+                font=("Arial", 11, "bold"))
+
+            if zone.zone_type.name != "NORMAL":
+                self.canvas.create_text(
+                    x, y + 25,
+                    text=zone.zone_type.name.lower(),
+                    fill="#000000" if text_color == "black" else "#cccccc",
+                    font=("Arial", 11, "bold"))
 
             if zone.max_drones > 1:
                 self.canvas.create_text(
-                    x, y + 12,
+                    x, y + 10,
                     text=f"max={zone.max_drones}",
-                    fill="#444444" if text_color == "black" else "#cccccc",
-                    font=("Arial", 8))
+                    fill="#000000" if text_color == "black" else "#cccccc",
+                    font=("Arial", 11))
 
     def _draw_drones_on_zones(self) -> None:
         for zone in self.graph.zones.values():
             x, y = self._zone_coords(zone)
             drones = list(zone.current_drones)
-            MAX_VISIBLE_DRONES = 3
+            MAX_VISIBLE_DRONES = 5
             visible = drones[:MAX_VISIBLE_DRONES]
             hidden = len(drones) - len(visible)
             total = len(visible)
@@ -192,8 +194,8 @@ class GraphView:
             font=("Arial", 8, "bold"))
 
     def _zone_coords(self, zone: Zone) -> tuple[float, float]:
-        x = (zone.x - self.min_x) * self.SCALE + self.PADDING
-        y = (zone.y - self.min_y) * self.SCALE + self.PADDING
+        x = (zone.x - self.min_x) * self.SCALE
+        y = (zone.y - self.min_y) * self.SCALE
         return x, y
 
     def _middle_point(self, x1: float, y1: float,
@@ -206,14 +208,14 @@ class GraphView:
             return custom.get(zone.color, zone.color)
 
         colors = {
-            ZoneType.RESTRICTED: "#FF9800",
-            ZoneType.BLOCKED: "#4a4a4a",
-            ZoneType.PRIORITY: "#1FBFEF",
-            ZoneType.NORMAL: "#CFD8DC"}
+            ZoneType.RESTRICTED: "#000000",
+            ZoneType.BLOCKED: "#ff0000",
+            ZoneType.PRIORITY: "#FFFFFF",
+            ZoneType.NORMAL: "#4AA4CA"}
 
         if zone.is_start:
             return "#4CAF50"
         if zone.is_end:
-            return "#FF5252"
+            return "#FF52F9"
 
         return colors[zone.zone_type]
