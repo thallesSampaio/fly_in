@@ -28,6 +28,7 @@ class Zone:
                  max_drones: int = 1, color: Optional[str] = None,
                  is_start: bool = False,
                  is_end: bool = False) -> None:
+        """Initialize a graph node."""
         self.name = name
         self.x = x
         self.y = y
@@ -41,19 +42,16 @@ class Zone:
 
     def has_capacity(self) -> bool:
         """Returns whether this node has the capacity to store new drones."""
-
         if self.is_start or self.is_end:
             return True
         return len(self.current_drones) < self.max_drones
 
     def add_drone(self, drone_id: int) -> None:
         """Add a drone ID to the current_drones set."""
-
         self.current_drones.add(drone_id)
 
     def remove_drone(self, drone_id: int) -> None:
         """Remove a drone ID from the current_drones set."""
-
         self.current_drones.discard(drone_id)
 
 
@@ -62,6 +60,7 @@ class Connection:
 
     def __init__(self, zone_a: Zone, zone_b: Zone,
                  max_capacity: int = 1) -> None:
+        """Initialize a graph edge."""
         self.zone_a = zone_a
         self.zone_b = zone_b
         self.max_capacity = max_capacity
@@ -70,7 +69,6 @@ class Connection:
     def get_other(self, zone: Zone) -> Zone:
         """Receives a node representing the current zone
         and returns the other zone on that edge."""
-
         if zone == self.zone_a:
             return self.zone_b
         elif zone == self.zone_b:
@@ -78,28 +76,23 @@ class Connection:
         raise ValueError(f"Zone '{zone.name}' is not part of this connection.")
 
     def has_capacity(self) -> bool:
+        """Return whether the zone has available capacity."""
         return len(self.current_drones) < self.max_capacity
 
-    def enter(self, drone_id: int) -> None:
+    def add_drone(self, drone_id: int) -> None:
+        """Add a drone ID to the current_drones set."""
         self.current_drones.add(drone_id)
 
-    def leave(self, drone_id: int) -> None:
+    def remove_drone(self, drone_id: int) -> None:
+        """Remove a drone ID from the current_drones set."""
         self.current_drones.discard(drone_id)
-
-
-class ParsedConnection:
-    """Represents an edge as a string before becoming a Connection object."""
-    def __init__(self, zone_a: str, zone_b: str,
-                 max_capacity: int = 1) -> None:
-        self.zone_a = zone_a
-        self.zone_b = zone_b
-        self.max_capacity = max_capacity
 
 
 class Drone:
     """Represents a drone."""
 
     def __init__(self, drone_id: int) -> None:
+        """Initialize a drone."""
         self.drone_id = drone_id
         self.current_zone: Optional[Zone] = None
         self.path: List[Zone] = []
@@ -111,26 +104,24 @@ class Drone:
 
     def start_transit(self, next_zone: Zone, connection: Connection) -> None:
         """Start moving toward a restricted zone. (2 turns)."""
-
         if not connection.has_capacity():
             return
 
         if self.current_zone is not None:
             self.current_zone.remove_drone(self.drone_id)
 
-        connection.enter(self.drone_id)
+        connection.add_drone(self.drone_id)
         self.current_connection = connection
         self.transit_dest = next_zone
         self.transit_turns_left = next_zone.zone_type.movement_cost() - 1.0
 
     def finish_transit(self) -> None:
         """Arrive at the restricted zone."""
-
         if self.transit_dest is None:
             return
 
         if self.current_connection is not None:
-            self.current_connection.leave(self.drone_id)
+            self.current_connection.remove_drone(self.drone_id)
 
         self.current_zone = self.transit_dest
         self.current_zone.add_drone(self.drone_id)
@@ -142,7 +133,6 @@ class Drone:
 
     def get_next_zone(self) -> Optional[Zone]:
         """Gets the next zone in the list of paths."""
-
         if self.path_index + 1 < len(self.path):
             return self.path[self.path_index + 1]
         return None
@@ -165,6 +155,7 @@ class Graph:
     """Represents a graph constructed from map data."""
 
     def __init__(self) -> None:
+        """Initialize a graph structure."""
         self.zones: Dict[str, Zone] = {}
         self.connections: List[Connection] = []
         self.start_zone: Optional[Zone] = None
@@ -173,7 +164,6 @@ class Graph:
 
     def add_zone(self, zone: Zone) -> None:
         """Add a Node to the graph."""
-
         if zone.name in self.zones:
             raise ValueError(f"Duplicate zone '{zone.name}'.")
 
@@ -187,7 +177,6 @@ class Graph:
                        zone_b_name: str,
                        max_capacity: int = 1) -> None:
         """Add an edge to the graph."""
-
         if zone_a_name not in self.zones:
             raise ValueError(f"Unknown zone '{zone_a_name}'.")
 
@@ -219,7 +208,6 @@ class Graph:
     def get_valid_neighbours(self, zone: Zone) -> List[Zone]:
         """Gets the accessible zones connected to the zone
         passed as a parameter."""
-
         result = []
         for conn in zone.neighbours:
             neighbor = conn.get_other(zone)
@@ -229,6 +217,7 @@ class Graph:
 
     def get_connection_between(self, zone_a: Zone,
                                zone_b: Zone) -> Connection | None:
+        """Gets the connection between two zones."""
         for connection in zone_a.neighbours:
             if connection.get_other(zone_a) == zone_b:
                 return connection
