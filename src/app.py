@@ -1,9 +1,9 @@
 import sys
-from src.MapParser import MapParser
+from src.map_parser import MapParser
 from src.simulator import Simulator
 
 try:
-    from src.Visualizer import GraphView
+    from src.visualizer import GraphView
 except ModuleNotFoundError:
     print("ModuleNotFoundError - Missing module: 'customtkinter'."
           "\nPlease run 'make install' and 'source venv/bin/activate'.")
@@ -33,7 +33,6 @@ def run_application() -> None:
         view.set_on_next_turn(sim.step)
         view.draw()
         view.run()
-        sim.run()
         sim.display_results()
 
         print(len(sim.turns))

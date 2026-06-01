@@ -4,15 +4,20 @@ from typing import List
 
 
 class Simulator:
+    """Simulate drone movement through a graph."""
+
     def __init__(self, graph: Graph, drones: List[Drone]) -> None:
+        """Initialize the simulator with a graph and drones."""
         self.graph = graph
         self.drones = drones
         self.turns: List[List[str]] = []
 
     def setup(self) -> None:
+        """Prepare the simulation before running turns."""
         self._assign_paths()
 
     def step(self) -> List[str]:
+        """Process one simulation turn and return its movements."""
         if self._all_delivered():
             return []
         turn_output = self._process_turn()
@@ -20,12 +25,8 @@ class Simulator:
             self.turns.append(turn_output)
         return turn_output
 
-    def run(self) -> None:
-        self.setup()
-        while not self._all_delivered():
-            self.step()
-
     def _assign_paths(self) -> None:
+        """Assign available paths to all drones."""
         pathfinder = Pathfinder(self.graph)
         max_paths: int = 0
         if self.graph.start_zone:
@@ -38,6 +39,7 @@ class Simulator:
                 drone.current_zone.add_drone(drone.drone_id)
 
     def _process_turn(self) -> List[str]:
+        """Process drone movements for the current turn."""
         turn_log: List[str] = []
         moved_this_turn: set[int] = set()
 
@@ -74,17 +76,15 @@ class Simulator:
         return turn_log
 
     def _all_delivered(self) -> bool:
+        """Return whether all drones have reached the destination."""
         for drone in self.drones:
             if not drone.delivered:
                 return False
         return True
 
-    def display_results(self) -> None:
-        for turn_moves in self.turns:
-            print(" ".join(turn_moves))
-
     def _finish_transits(self, turn_log: List[str],
                          moved_this_turn: set[int]) -> None:
+        """Finish drones currently moving through restricted connections."""
 
         for drone in self.drones:
             if drone.delivered or drone.current_connection is None:
@@ -102,3 +102,8 @@ class Simulator:
 
             if drone.current_zone == self.graph.end_zone:
                 drone.delivered = True
+
+    def display_results(self) -> None:
+        """Print all recorded simulation turns."""
+        for turn_moves in self.turns:
+            print(" ".join(turn_moves))
