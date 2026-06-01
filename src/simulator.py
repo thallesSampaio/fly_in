@@ -1,22 +1,21 @@
 from src.models import Graph, Drone, ZoneType
 from src.pathfinder import Pathfinder
-from typing import List
 
 
 class Simulator:
     """Simulate drone movement through a graph."""
 
-    def __init__(self, graph: Graph, drones: List[Drone]) -> None:
+    def __init__(self, graph: Graph, drones: list[Drone]) -> None:
         """Initialize the simulator with a graph and drones."""
         self.graph = graph
         self.drones = drones
-        self.turns: List[List[str]] = []
+        self.turns: list[list[str]] = []
 
     def setup(self) -> None:
         """Prepare the simulation before running turns."""
         self._assign_paths()
 
-    def step(self) -> List[str]:
+    def step(self) -> list[str]:
         """Process one simulation turn and return its movements."""
         if self._all_delivered():
             return []
@@ -29,18 +28,17 @@ class Simulator:
         """Assign available paths to all drones."""
         pathfinder = Pathfinder(self.graph)
         max_paths: int = 0
-        if self.graph.start_zone:
-            max_paths = len(self.graph.start_zone.neighbours)
-        paths = pathfinder._find_multiple_paths(max_paths)
+        max_paths = len(self.graph.start_zone.neighbours)
+        paths = pathfinder.find_multiple_paths(max_paths)
         for index, drone in enumerate(self.drones):
             drone.path = paths[index % len(paths)]
             drone.current_zone = self.graph.start_zone
             if drone.current_zone is not None:
                 drone.current_zone.add_drone(drone.drone_id)
 
-    def _process_turn(self) -> List[str]:
+    def _process_turn(self) -> list[str]:
         """Process drone movements for the current turn."""
-        turn_log: List[str] = []
+        turn_log: list[str] = []
         moved_this_turn: set[int] = set()
 
         self._finish_transits(turn_log, moved_this_turn)
@@ -82,7 +80,7 @@ class Simulator:
                 return False
         return True
 
-    def _finish_transits(self, turn_log: List[str],
+    def _finish_transits(self, turn_log: list[str],
                          moved_this_turn: set[int]) -> None:
         """Finish drones currently moving through restricted connections."""
 

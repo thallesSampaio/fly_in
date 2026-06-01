@@ -1,4 +1,4 @@
-from typing import Set, Optional, List, Dict
+from typing import Optional
 from enum import Enum
 
 
@@ -35,10 +35,10 @@ class Zone:
         self.zone_type = zone_type
         self.max_drones = max_drones
         self.color = color
-        self.neighbours: List[Connection] = []
+        self.neighbours: list[Connection] = []
         self.is_start = is_start
         self.is_end = is_end
-        self.current_drones: Set[int] = set()
+        self.current_drones: set[int] = set()
 
     def has_capacity(self) -> bool:
         """Returns whether this node has the capacity to store new drones."""
@@ -64,7 +64,7 @@ class Connection:
         self.zone_a = zone_a
         self.zone_b = zone_b
         self.max_capacity = max_capacity
-        self.current_drones: Set[int] = set()
+        self.current_drones: set[int] = set()
 
     def get_other(self, zone: Zone) -> Zone:
         """Receives a node representing the current zone
@@ -95,7 +95,7 @@ class Drone:
         """Initialize a drone."""
         self.drone_id = drone_id
         self.current_zone: Optional[Zone] = None
-        self.path: List[Zone] = []
+        self.path: list[Zone] = []
         self.path_index: int = 0
         self.delivered: bool = False
         self.current_connection: Optional[Connection] = None
@@ -156,10 +156,10 @@ class Graph:
 
     def __init__(self) -> None:
         """Initialize a graph structure."""
-        self.zones: Dict[str, Zone] = {}
-        self.connections: List[Connection] = []
-        self.start_zone: Optional[Zone] = None
-        self.end_zone: Optional[Zone] = None
+        self.zones: dict[str, Zone] = {}
+        self.connections: list[Connection] = []
+        self.start_zone: Zone
+        self.end_zone: Zone
         self.__connection_keys: set[tuple[str, str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
@@ -177,12 +177,6 @@ class Graph:
                        zone_b_name: str,
                        max_capacity: int = 1) -> None:
         """Add an edge to the graph."""
-        if zone_a_name not in self.zones:
-            raise ValueError(f"Unknown zone '{zone_a_name}'.")
-
-        if zone_b_name not in self.zones:
-            raise ValueError(f"Unknown zone '{zone_b_name}'.")
-
         a, b = sorted((zone_a_name, zone_b_name))
         key: tuple[str, str] = (a, b)
 
@@ -199,13 +193,7 @@ class Graph:
         zone_a.neighbours.append(conn)
         zone_b.neighbours.append(conn)
 
-    def get_zone(self, name: str) -> Zone:
-        """Get a zone by name."""
-        if name not in self.zones:
-            raise ValueError(f"Zone '{name}' not found.")
-        return self.zones.get(name, self.zones[name])
-
-    def get_valid_neighbours(self, zone: Zone) -> List[Zone]:
+    def get_valid_neighbours(self, zone: Zone) -> list[Zone]:
         """Gets the accessible zones connected to the zone
         passed as a parameter."""
         result = []

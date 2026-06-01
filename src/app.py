@@ -44,6 +44,8 @@ def run_application() -> None:
     except PermissionError as e:
         print(f"No permission to map file. {e.strerror}: '{e.filename}'.")
         sys.exit(1)
+    except ValueError as e:
+        print(f"Parse Error - {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         sys.exit(1)

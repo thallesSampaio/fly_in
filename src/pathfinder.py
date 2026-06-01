@@ -1,6 +1,5 @@
-from collections import deque
 from src.models import Graph, Zone
-from typing import List, Tuple, Dict, Optional
+from typing import Optional
 import heapq
 
 
@@ -9,42 +8,14 @@ class Pathfinder:
         """Find valid paths between the start and end zones of a graph."""
         self.graph = graph
 
-    def bfs(self) -> List[Zone]:
-        if self.graph.start_zone is None:
-            raise ValueError("Pathfinder - Error: missing start zone.")
-        if self.graph.end_zone is None:
-            raise ValueError("Pathfinder - Error: missing end zone.")
-        start = self.graph.start_zone
-        end = self.graph.end_zone
-
-        queue = deque([(start, [start])])
-        visited = {start.name}
-
-        while queue:
-            current_zone, path = queue.popleft()
-
-            if current_zone == end:
-                return path
-
-            for neighbor in self.graph.get_valid_neighbours(current_zone):
-                if neighbor.name not in visited:
-                    visited.add(neighbor.name)
-                    queue.append((neighbor, path + [neighbor]))
-        return []
-
-    def dijkstra(self, blocked: set[str]) -> List[Zone]:
+    def dijkstra(self, blocked: set[str]) -> list[Zone]:
         """Find the lowest-cost path while avoiding blocked zones."""
-        if self.graph.start_zone is None:
-            raise ValueError("Pathfinder - Error: missing start zone.")
-        if self.graph.end_zone is None:
-            raise ValueError("Pathfinder - Error: missing end zone.")
-
         start = self.graph.start_zone
         end = self.graph.end_zone
 
-        heap: List[Tuple[float, str]] = [(0, start.name)]
-        prev: Dict[str, Optional[Zone]] = {start.name: None}
-        dist: Dict[str, float] = {start.name: 0}
+        heap: list[tuple[float, str]] = [(0, start.name)]
+        prev: dict[str, Optional[Zone]] = {start.name: None}
+        dist: dict[str, float] = {start.name: 0}
 
         while heap:
             cost, current_name = heapq.heappop(heap)
@@ -68,7 +39,7 @@ class Pathfinder:
         if end.name not in prev:
             return []
 
-        path: List[Zone] = []
+        path: list[Zone] = []
         node: Optional[Zone] = end
         while node is not None:
             path.append(node)
@@ -76,11 +47,11 @@ class Pathfinder:
         path.reverse()
         return path
 
-    def _find_multiple_paths(self, max_paths: int) -> list[list[Zone]]:
+    def find_multiple_paths(self, max_paths: int) -> list[list[Zone]]:
         """Try to find multiple alternative paths from start to end."""
         best = self.dijkstra(set())
         if not best:
-            raise ValueError("No valid path found.")
+            raise ValueError("No path found between the start and end zones.")
 
         found: list[list[Zone]] = [best]
         seen: set[tuple[str, ...]] = {tuple(z.name for z in best)}

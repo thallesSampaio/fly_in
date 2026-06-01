@@ -1,5 +1,4 @@
-from src.models import (Zone, ZoneType, Drone, Graph, Connection)
-from typing import List
+from src.models import Zone, ZoneType, Drone, Graph, Connection
 
 
 class MapParser:
@@ -12,7 +11,7 @@ class MapParser:
     _loaded_zones: dict[str, Zone] = {}
 
     @classmethod
-    def load_data(cls, filename: str) -> tuple[Graph, List[Drone]]:
+    def load_data(cls, filename: str) -> tuple[Graph, list[Drone]]:
         """Load data from the map files"""
 
         graph = Graph()
