@@ -1,4 +1,4 @@
-from src.models import (Zone, ZoneType, Drone, Graph, ParsedConnection)
+from src.models import (Zone, ZoneType, Drone, Graph, Connection)
 from typing import List
 
 
@@ -9,6 +9,7 @@ class MapParser:
         "nb_drones", "start_hub", "end_hub",
         "hub", "connection"]
     zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
+    _loaded_zones: dict[str, Zone] = {}
 
     @classmethod
     def load_data(cls, filename: str) -> tuple[Graph, List[Drone]]:
@@ -34,32 +35,33 @@ class MapParser:
                                          " nb_drones.")
                     first_valid_line = False
 
-                if key != "hub" and key != "connection":
+                if key in ["nb_drones", "start_hub", "end_hub"]:
                     if key in dup_helper:
                         raise ValueError(f"Duplicate key found at line {i}: "
                                          f"'{key}'.")
-                if not value:
-                    raise ValueError(f"Empty value for key '{key}' "
-                                     f"at line {i}.")
+                    dup_helper.add(key)
 
                 if key in cls.zones_keys:
                     zone = cls.__parse_hub(i, value)
+                    if zone.name in cls._loaded_zones:
+                        raise ValueError(f"Line {i}: Zone '{zone.name}'"
+                                         " is already defined.")
                     if key == "start_hub":
                         zone.is_start = True
                     elif key == "end_hub":
                         zone.is_end = True
+                    cls._loaded_zones[zone.name] = zone
                     graph.add_zone(zone)
-                    dup_helper.add(key)
                 elif key == "connection":
-                    conn: ParsedConnection = cls.__parse_connection(i, value)
+                    conn: Connection = cls.__parse_connection(i, value)
                     try:
-                        graph.add_connection(conn.zone_a,
-                                             conn.zone_b, conn.max_capacity)
+                        graph.add_connection(conn.zone_a.name,
+                                             conn.zone_b.name,
+                                             conn.max_capacity)
                     except ValueError as e:
                         raise ValueError(f"Line {i}: {e.args[0]}")
                 elif key == "nb_drones":
                     list_drones = cls.__parse_nb_drones(i, value)
-                    dup_helper.add(key)
 
         required = ["nb_drones", "start_hub", "end_hub"]
         missing = []
@@ -67,7 +69,7 @@ class MapParser:
             if key not in dup_helper:
                 missing.append(key)
         if missing:
-            raise ValueError(f"Missing required keys: {', '.join(missing)}.")
+            raise ValueError(f"Missing required keys: {missing}.")
 
         return (graph, list_drones)
 
@@ -137,7 +139,7 @@ class MapParser:
 
     @classmethod
     def __parse_connection(cls, line_number: int,
-                           value: str) -> ParsedConnection:
+                           value: str) -> Connection:
         """Parse and validate conneciton line."""
 
         parts = value.split()
@@ -163,6 +165,13 @@ class MapParser:
             raise ValueError(f"Line {line_number}: "
                              "Connection zones cannot be empty.")
 
+        if zone_a not in cls._loaded_zones:
+            raise ValueError(f"Line {line_number}: Zone '{zone_a}' undefined.")
+        if zone_b not in cls._loaded_zones:
+            raise ValueError(f"Line {line_number}: Zone '{zone_b}' undefined.")
+        zone_a_obj = cls._loaded_zones[zone_a]
+        zone_b_obj = cls._loaded_zones[zone_b]
+
         metadata_str = " ".join(parts[1:]) if len(parts) > 1 else ""
         metadata = cls.__parse_metadata(line_number, metadata_str)
 
@@ -183,8 +192,8 @@ class MapParser:
             raise ValueError(f"Line {line_number}: max_capacity"
                              " must be higher than 0.")
 
-        return ParsedConnection(zone_a=zone_a, zone_b=zone_b,
-                                max_capacity=max_capacity)
+        return Connection(zone_a=zone_a_obj, zone_b=zone_b_obj,
+                          max_capacity=max_capacity)
 
     @classmethod
     def __parse_metadata(cls, line_number: int,
