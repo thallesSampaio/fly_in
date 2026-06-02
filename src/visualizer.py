@@ -81,8 +81,19 @@ class GraphView:
     def _handle_next_turn(self) -> None:
         if self.on_next_turn is None:
             return
-        self.on_next_turn()
-        self.draw()
+        if self.on_next_turn():
+            self.draw()
+        else:
+            center_x = self.WINDOW_WIDTH / 2
+            center_y = self.WINDOW_HEIGHT / 2
+
+            self.canvas.create_text(
+                center_x, center_y,
+                text="Simulation ended! Closing window in 3 seconds...",
+                fill="#FFCC00",
+                font=("Arial", 16, "bold"))
+            self.root.update()
+            self.root.after(3500, self.root.destroy)
 
     def _calculate_min_coords(self) -> None:
         if not self.graph.zones:
