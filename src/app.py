@@ -25,7 +25,8 @@ def run_application() -> None:
         res = MapParser.load_data(map_file)
         graph = res[0]
         drones = res[1]
-
+        if not graph.is_connected():
+            raise ValueError("Disconnected graph.")
         view = GraphView(graph, drones)
         sim = Simulator(graph, drones)
 

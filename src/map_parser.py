@@ -163,10 +163,9 @@ class MapParser:
             raise ValueError(f"Line {line_number}: "
                              "Connection zones cannot be empty.")
 
-        if zone_a not in cls._loaded_zones:
-            raise ValueError(f"Line {line_number}: Zone '{zone_a}' undefined.")
-        if zone_b not in cls._loaded_zones:
-            raise ValueError(f"Line {line_number}: Zone '{zone_b}' undefined.")
+        if zone_a not in cls._loaded_zones or zone_a not in cls._loaded_zones:
+            raise ValueError(f"Line {line_number}: Invalid connection, "
+                             f" undefined zones '{zone_a}-{zone_b}'.")
         zone_a_obj = cls._loaded_zones[zone_a]
         zone_b_obj = cls._loaded_zones[zone_b]
 

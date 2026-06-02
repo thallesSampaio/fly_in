@@ -33,8 +33,7 @@ class Simulator:
         for index, drone in enumerate(self.drones):
             drone.path = paths[index % len(paths)]
             drone.current_zone = self.graph.start_zone
-            if drone.current_zone is not None:
-                drone.current_zone.add_drone(drone.drone_id)
+            drone.current_zone.add_drone(drone.drone_id)
 
     def _process_turn(self) -> list[str]:
         """Process drone movements for the current turn."""

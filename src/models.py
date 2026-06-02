@@ -160,7 +160,7 @@ class Graph:
         self.connections: list[Connection] = []
         self.start_zone: Zone
         self.end_zone: Zone
-        self.__connection_keys: set[tuple[str, str]] = set()
+        self._connection_keys: set[tuple[str, str]] = set()
 
     def add_zone(self, zone: Zone) -> None:
         """Add a Node to the graph."""
@@ -180,11 +180,11 @@ class Graph:
         a, b = sorted((zone_a_name, zone_b_name))
         key: tuple[str, str] = (a, b)
 
-        if key in self.__connection_keys:
+        if key in self._connection_keys:
             raise ValueError("Duplicate connection"
                              f" '{zone_a_name}-{zone_b_name}'.")
 
-        self.__connection_keys.add(key)
+        self._connection_keys.add(key)
 
         zone_a = self.zones[zone_a_name]
         zone_b = self.zones[zone_b_name]
@@ -211,3 +211,26 @@ class Graph:
                 return connection
 
         return None
+
+    def is_connected(self) -> bool:
+        """Check if graph is fully connected."""
+        if not self.start_zone:
+            return False
+
+        visited: set[str] = set()
+        queue: list[Zone] = [self.start_zone]
+        visited.add(self.start_zone.name)
+
+        while queue:
+            current = queue.pop(0)
+
+            for neighbor in self.get_valid_neighbours(current):
+                if neighbor.name not in visited:
+                    visited.add(neighbor.name)
+                    queue.append(neighbor)
+
+        total = 0
+        for zone in self.zones.values():
+            if zone.zone_type != ZoneType.BLOCKED:
+                total += 1
+        return len(visited) == total
