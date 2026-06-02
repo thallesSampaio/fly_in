@@ -4,10 +4,10 @@ from src.models import Zone, ZoneType, Drone, Graph, Connection
 class MapParser:
     """Class responsible for parsing and validating map files."""
 
-    valid_keys: list[str] = [
+    _valid_keys: list[str] = [
         "nb_drones", "start_hub", "end_hub",
         "hub", "connection"]
-    zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
+    _zones_keys: list[str] = ["start_hub", "end_hub", "hub"]
     _loaded_zones: dict[str, Zone] = {}
 
     @classmethod
@@ -26,7 +26,7 @@ class MapParser:
                 if not line or line.startswith("#"):
                     continue
 
-                key, value = cls.__parse_key_value(i, line)
+                key, value = cls._parse_key_value(i, line)
 
                 if first_valid_line:
                     if key != "nb_drones":
@@ -40,8 +40,8 @@ class MapParser:
                                          f"'{key}'.")
                     dup_helper.add(key)
 
-                if key in cls.zones_keys:
-                    zone = cls.__parse_hub(i, value)
+                if key in cls._zones_keys:
+                    zone = cls._parse_hub(i, value)
                     if zone.name in cls._loaded_zones:
                         raise ValueError(f"Line {i}: Zone '{zone.name}'"
                                          " is already defined.")
@@ -52,7 +52,7 @@ class MapParser:
                     cls._loaded_zones[zone.name] = zone
                     graph.add_zone(zone)
                 elif key == "connection":
-                    conn: Connection = cls.__parse_connection(i, value)
+                    conn: Connection = cls._parse_connection(i, value)
                     try:
                         graph.add_connection(conn.zone_a.name,
                                              conn.zone_b.name,
@@ -60,7 +60,7 @@ class MapParser:
                     except ValueError as e:
                         raise ValueError(f"Line {i}: {e.args[0]}")
                 elif key == "nb_drones":
-                    list_drones = cls.__parse_nb_drones(i, value)
+                    list_drones = cls._parse_nb_drones(i, value)
 
         required = ["nb_drones", "start_hub", "end_hub"]
         missing = []
@@ -73,7 +73,7 @@ class MapParser:
         return (graph, list_drones)
 
     @classmethod
-    def __parse_nb_drones(cls, line_number: int, value: str) -> list[Drone]:
+    def _parse_nb_drones(cls, line_number: int, value: str) -> list[Drone]:
         """Parse and validate nb_drones line."""
 
         try:
@@ -89,7 +89,7 @@ class MapParser:
         return [Drone(i) for i in range(1, nb_drones + 1)]
 
     @classmethod
-    def __parse_hub(cls, line_number: int, value: str) -> Zone:
+    def _parse_hub(cls, line_number: int, value: str) -> Zone:
         """Parse and validate hub line."""
 
         valid_metadata = {"zone", "color", "max_drones"}
@@ -112,7 +112,7 @@ class MapParser:
                              f" '{parts[1]}' and '{parts[2]}'.")
 
         metadata_str = " ".join(parts[3:]) if len(parts) > 3 else ""
-        metadata = cls.__parse_metadata(line_number, metadata_str)
+        metadata = cls._parse_metadata(line_number, metadata_str)
         for key in metadata:
             if key not in valid_metadata:
                 raise ValueError(f"Line {line_number}: Invalid hub metadata"
@@ -137,8 +137,7 @@ class MapParser:
                     max_drones=max_drones)
 
     @classmethod
-    def __parse_connection(cls, line_number: int,
-                           value: str) -> Connection:
+    def _parse_connection(cls, line_number: int, value: str) -> Connection:
         """Parse and validate conneciton line."""
 
         parts = value.split()
@@ -172,7 +171,7 @@ class MapParser:
         zone_b_obj = cls._loaded_zones[zone_b]
 
         metadata_str = " ".join(parts[1:]) if len(parts) > 1 else ""
-        metadata = cls.__parse_metadata(line_number, metadata_str)
+        metadata = cls._parse_metadata(line_number, metadata_str)
 
         for key in metadata:
             if key != "max_link_capacity":
@@ -195,8 +194,8 @@ class MapParser:
                           max_capacity=max_capacity)
 
     @classmethod
-    def __parse_metadata(cls, line_number: int,
-                         metadata: str) -> dict[str, str]:
+    def _parse_metadata(cls, line_number: int,
+                        metadata: str) -> dict[str, str]:
         """Parse and validate metadata."""
 
         if not metadata:
@@ -204,7 +203,6 @@ class MapParser:
 
         if not metadata.startswith("[") or not metadata.endswith("]"):
             raise ValueError(f"Line {line_number}: Invalid metadata format.")
-
         content = metadata[1:-1].strip()
         parsed: dict[str, str] = {}
 
@@ -213,8 +211,8 @@ class MapParser:
 
         for item in content.split():
             if "=" not in item:
-                raise ValueError(
-                    f"Line {line_number}: Invalid metadata item '{item}'.")
+                raise ValueError(f"Line {line_number}: Invalid metadata format"
+                                 "missing '='.")
 
             key, value = item.split("=", 1)
 
@@ -231,7 +229,7 @@ class MapParser:
         return parsed
 
     @classmethod
-    def __parse_key_value(cls, line_number: int, line: str) -> tuple[str, str]:
+    def _parse_key_value(cls, line_number: int, line: str) -> tuple[str, str]:
         """Read line, split key-value and validate."""
 
         if ":" not in line:
@@ -241,7 +239,7 @@ class MapParser:
         key = key.strip()
         value = value.strip()
 
-        if key not in cls.valid_keys:
+        if key not in cls._valid_keys:
             raise ValueError(f"Line {line_number}: Invalid key '{key}'.")
 
         if not value:
