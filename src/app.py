@@ -34,9 +34,10 @@ def run_application() -> None:
         view.set_on_next_turn(sim.step)
         view.draw()
         view.run()
+        print()
         sim.display_results()
 
-        print(len(sim.turns))
+        print(f"\n\nTotal turns: {len(sim.turns)}.")
         sys.exit(0)
 
     except FileNotFoundError as e:

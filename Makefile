@@ -14,13 +14,13 @@ venv: $(VENV)/bin/activate
 
 install: venv
 	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements-dev.txt
+	$(PIP) install -r requirements.txt
 
 run: install
-	$(PYTHON) fly_in.py map.txt
+	$(PYTHON) main.py maps/easy/01_linear_path.txt
 
 debug: install
-	$(PYTHON) -m pdb fly_in.py map.txt
+	$(PYTHON) -m pdb main.py maps/easy/01_linear_path.txt
 
 lint: install
 	$(PYTHON) -m flake8 . --exclude '$(VENV)'

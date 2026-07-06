@@ -66,7 +66,4 @@ class Pathfinder:
                 found.append(path)
             if len(found) >= max_paths:
                 break
-        for item in found:
-            for zone in item:
-                print(f"PATH-{zone.name}")
         return found
